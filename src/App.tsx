@@ -45,6 +45,22 @@ export function App() {
         <a className="brand" href="#/">
           Algorithm<span>Visualizer</span>
         </a>
+        <select
+          className="algo-picker"
+          aria-label="Algorithm"
+          value={algo.id}
+          onChange={(e) => (window.location.hash = `#/${e.target.value}`)}
+        >
+          {categories.map((cat) => (
+            <optgroup key={cat} label={CATEGORY_LABELS[cat]}>
+              {ALGORITHMS.filter((a) => a.kind === cat).map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
         {categories.map((cat) => (
           <div key={cat} className="group">
             <h2>{CATEGORY_LABELS[cat]}</h2>

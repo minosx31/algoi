@@ -75,7 +75,7 @@ function Player({ algo, lang, onLang, input, setInput, size, setSize, frames }: 
             <h1>{algo.name}</h1>
             <p className="summary">{algo.summary}</p>
           </div>
-          <dl className="complexity">
+          <dl className="complexity" aria-label="Complexity">
             <div>
               <dt>Time</dt>
               <dd>{algo.complexity.time}</dd>
@@ -127,13 +127,23 @@ function Player({ algo, lang, onLang, input, setInput, size, setSize, frames }: 
         <Legend kind={algo.kind} />
 
         <div className="controls">
-          <button aria-label="First step" onClick={() => dispatch({ type: "seek", index: 0 })}>⏮</button>
-          <button aria-label="Previous step" onClick={() => dispatch({ type: "step", delta: -1 })}>◀</button>
-          <button className="primary" aria-label={playing ? "Pause" : "Play"} onClick={() => dispatch({ type: "toggle" })}>
-            {playing ? "❚❚" : "▶"}
-          </button>
-          <button aria-label="Next step" onClick={() => dispatch({ type: "step", delta: 1 })}>▶︎|</button>
-          <button aria-label="Last step" onClick={() => dispatch({ type: "seek", index: last })}>⏭</button>
+          <div className="buttons">
+            <button aria-label="First step" onClick={() => dispatch({ type: "seek", index: 0 })}>
+              <Icon d="M6 5v14M18 6l-9 6 9 6z" />
+            </button>
+            <button aria-label="Previous step" onClick={() => dispatch({ type: "step", delta: -1 })}>
+              <Icon d="M15 6l-6 6 6 6" />
+            </button>
+            <button className="primary" aria-label={playing ? "Pause" : "Play"} onClick={() => dispatch({ type: "toggle" })}>
+              {playing ? <Icon d="M8 5v14M16 5v14" /> : <Icon d="M7 5l12 7-12 7z" fill />}
+            </button>
+            <button aria-label="Next step" onClick={() => dispatch({ type: "step", delta: 1 })}>
+              <Icon d="M9 6l6 6-6 6" />
+            </button>
+            <button aria-label="Last step" onClick={() => dispatch({ type: "seek", index: last })}>
+              <Icon d="M18 5v14M6 6l9 6-9 6z" />
+            </button>
+          </div>
           <input
             className="scrub"
             type="range"
@@ -203,5 +213,13 @@ function Legend({ kind }: { kind: Algorithm["kind"] }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+function Icon({ d, fill = false }: { d: string; fill?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path d={d} fill={fill ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
