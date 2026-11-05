@@ -5,9 +5,19 @@ export const quickSort: SortingAlgorithm = {
   id: "quick-sort",
   name: "Quick Sort",
   kind: "sorting",
-  summary:
-    "Picks the last element as pivot and partitions the range so smaller values sit left of it and the rest sit right. The pivot is then in its final place, and each side is sorted the same way.",
-  complexity: { time: "O(n log n) avg, O(n²) worst", space: "O(log n)" },
+  about: {
+    summary: "Picks a pivot, partitions the range so smaller values sit left of it and the rest sit right, then sorts each side the same way.",
+    invariants: [
+      "During partition: A[lo..i] < pivot ≤ A[i+1..j−1].",
+      "After partition, the pivot is in its final position.",
+    ],
+    useCases: [
+      "General-purpose in-memory sorting: fast in practice thanks to good cache behavior.",
+      "The basis of most standard-library sorts (introsort adds a fallback for the O(n²) case).",
+      "Quickselect: the same partition finds the k-th smallest value in O(n) average.",
+    ],
+  },
+  complexity: { best: "O(n log n)", average: "O(n log n)", worst: "O(n²)", space: "O(log n) avg, O(n) worst" },
   code: {
     pseudo: `
 procedure quickSort(A, lo, hi)

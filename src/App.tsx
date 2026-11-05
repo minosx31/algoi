@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ALGORITHMS, findAlgorithm } from "./algorithms";
 import { LANGUAGES, type Category, type LangId } from "./core/types";
 import { Visualizer } from "./components/Visualizer";
+import type { LayoutId } from "./core/inputs";
 
 const CATEGORY_LABELS: Record<Category, string> = { sorting: "Sorting", graph: "Graph" };
 
@@ -20,6 +21,7 @@ function storedLang(): LangId {
 export function App() {
   const [id, setId] = useState(routeId);
   const [lang, setLang] = useState<LangId>(storedLang);
+  const [layout, setLayout] = useState<LayoutId>("mesh");
   const algo = findAlgorithm(id) ?? ALGORITHMS[0];
 
   useEffect(() => {
@@ -79,7 +81,7 @@ export function App() {
         <p className="keys">Space play/pause · ← → step</p>
       </nav>
       <main>
-        <Visualizer key={algo.id} algo={algo} lang={lang} onLang={chooseLang} />
+        <Visualizer key={algo.id} algo={algo} lang={lang} onLang={chooseLang} layout={layout} onLayout={setLayout} />
       </main>
     </div>
   );

@@ -5,9 +5,18 @@ export const selectionSort: SortingAlgorithm = {
   id: "selection-sort",
   name: "Selection Sort",
   kind: "sorting",
-  summary:
-    "Scans the unsorted part for its smallest value and swaps it into the next slot. After step i, A[0..i] holds the i+1 smallest values in order.",
-  complexity: { time: "O(n²)", space: "O(1)" },
+  about: {
+    summary: "Repeatedly finds the smallest value in the unsorted part and swaps it into the next slot.",
+    invariants: [
+      "After step i, A[0..i] holds the i+1 smallest values in their final order.",
+      "Every value in the sorted prefix is ≤ every value in the unsorted suffix.",
+    ],
+    useCases: [
+      "When writes are expensive (e.g. flash memory): it does at most n − 1 swaps.",
+      "Teaching the idea of a growing sorted region built from minimums.",
+    ],
+  },
+  complexity: { best: "O(n²)", average: "O(n²)", worst: "O(n²)", space: "O(1)" },
   code: {
     pseudo: `
 procedure selectionSort(A)

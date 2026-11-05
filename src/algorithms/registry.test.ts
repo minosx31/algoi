@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { ALGORITHMS } from "./index";
 import { labelsOf } from "../core/code";
-import { randomArray, sampleGraph } from "../core/inputs";
+import { GRAPH_LAYOUTS, buildGraph, randomArray, withRandomWeights } from "../core/inputs";
 import { LANGUAGES, type Graph } from "../core/types";
 
 function framesOf(algo: (typeof ALGORITHMS)[number]) {
-  return algo.kind === "sorting" ? algo.run(randomArray(12)) : algo.run(sampleGraph(true), 0);
+  return algo.kind === "sorting" ? algo.run(randomArray(12)) : algo.run(withRandomWeights(buildGraph("mesh")), 0);
 }
 
 function shortestHops(g: Graph, s: number) {
@@ -33,6 +33,24 @@ function shortestWeighted(g: Graph, s: number) {
 }
 
 const ids = ALGORITHMS.map((a) => a.id);
+
+test("every layout is connected and has at most 12 named nodes", () => {
+  for (const { id } of GRAPH_LAYOUTS)
+    for (let k = 0; k < 20; k++) {
+      const g = buildGraph(id);
+      expect(g.nodes.length).toBeLessThanOrEqual(12);
+      expect(Object.keys(shortestHops(g, 0)).length).toBe(g.nodes.length);
+    }
+});
+
+test("every algorithm documents summary, invariants, complexity, and use cases", () => {
+  for (const a of ALGORITHMS) {
+    expect(a.about.summary.length).toBeGreaterThan(0);
+    expect(a.about.invariants.length).toBeGreaterThan(0);
+    expect(a.about.useCases.length).toBeGreaterThan(0);
+    for (const v of Object.values(a.complexity)) expect(v).toMatch(/^O\(/);
+  }
+});
 
 test("algorithm ids are unique", () => {
   expect(new Set(ids).size).toBe(ids.length);
@@ -62,9 +80,9 @@ describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
       }
     });
   } else {
-    test("final labels are correct shortest distances", () => {
+    test.each(GRAPH_LAYOUTS.map((l) => l.id))("visits everything with correct final labels on %s", (layout) => {
       for (const start of [0, 5, 9]) {
-        const g = sampleGraph(true);
+        const g = withRandomWeights(buildGraph(layout));
         const frames = algo.run(g, start);
         const last = frames[frames.length - 1];
         for (const node of g.nodes) expect(last.nodes[node.id]).toBe("visited");

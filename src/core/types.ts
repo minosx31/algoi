@@ -46,11 +46,20 @@ export type Graph = {
   edges: { u: number; v: number; w: number }[];
 };
 
+/** Every algorithm documents itself in the same fixed structure. */
+export type About = {
+  summary: string;
+  invariants: string[];
+  useCases: string[];
+};
+
+export type Complexity = { best: string; average: string; worst: string; space: string };
+
 type AlgorithmBase = {
   id: string;
   name: string;
-  summary: string;
-  complexity: { time: string; space: string };
+  about: About;
+  complexity: Complexity;
   code: CodeListings;
 };
 

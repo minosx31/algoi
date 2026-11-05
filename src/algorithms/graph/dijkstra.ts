@@ -6,9 +6,19 @@ export const dijkstra: GraphAlgorithm = {
   name: "Dijkstra's Algorithm",
   kind: "graph",
   weighted: true,
-  summary:
-    "Always settles the unsettled node with the smallest known distance, then relaxes its edges to see if they offer a shorter route. With non-negative weights, a settled distance can never improve. The heap may hold stale entries, which are skipped when popped.",
-  complexity: { time: "O((V + E) log V)", space: "O(V)" },
+  about: {
+    summary: "Repeatedly settles the closest unsettled node, then relaxes its edges to see if they offer a shorter route.",
+    invariants: [
+      "Once a node is popped (settled), its distance is final, as long as all weights are non-negative.",
+      "dist[v] is always the length of some real path to v, so it only ever decreases.",
+    ],
+    useCases: [
+      "Road navigation and routing with non-negative travel costs.",
+      "Network routing protocols such as OSPF.",
+      "The foundation for A*, which adds a heuristic to aim the search.",
+    ],
+  },
+  complexity: { best: "O((V + E) log V)", average: "O((V + E) log V)", worst: "O((V + E) log V)", space: "O(V + E)" },
   code: {
     pseudo: `
 procedure Dijkstra(G, s)

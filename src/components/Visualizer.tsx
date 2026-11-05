@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Algorithm, ArrayFrame, Graph, GraphFrame, LangId } from "../core/types";
-import { randomArray, sampleGraph } from "../core/inputs";
+import { GRAPH_LAYOUTS, buildGraph, randomArray, withRandomWeights, type LayoutId } from "../core/inputs";
 import { usePlayer } from "./usePlayer";
 import { ArrayView } from "./ArrayView";
 import { GraphView } from "./GraphView";
 import { CodePanel } from "./CodePanel";
+import { AboutCard } from "./AboutCard";
 
-type Input = { kind: "sorting"; values: number[] } | { kind: "graph"; graph: Graph; start: number };
+type Input =
+  | { kind: "sorting"; values: number[] }
+  | { kind: "graph"; layout: LayoutId; graph: Graph; start: number };
 
-function freshInput(algo: Algorithm, size: number): Input {
+function freshInput(algo: Algorithm, size: number, layout: LayoutId): Input {
   return algo.kind === "sorting"
     ? { kind: "sorting", values: randomArray(size) }
-    : { kind: "graph", graph: sampleGraph(), start: 0 };
+    : { kind: "graph", layout, graph: buildGraph(layout), start: 0 };
 }
 
 function runAlgorithm(algo: Algorithm, input: Input): (ArrayFrame | GraphFrame)[] {
@@ -29,19 +32,28 @@ const SPEEDS = [
   { label: "10×", ms: 20 },
 ];
 
-export function Visualizer({ algo, lang, onLang }: { algo: Algorithm; lang: LangId; onLang: (l: LangId) => void }) {
+type VisualizerProps = {
+  algo: Algorithm;
+  lang: LangId;
+  onLang: (l: LangId) => void;
+  layout: LayoutId;
+  onLayout: (l: LayoutId) => void;
+};
+
+export function Visualizer({ algo, lang, onLang, layout, onLayout }: VisualizerProps) {
   const [size, setSize] = useState(16);
-  const [{ input, version }, setState] = useState(() => ({ input: freshInput(algo, size), version: 0 }));
+  const [{ input, version }, setState] = useState(() => ({ input: freshInput(algo, size, layout), version: 0 }));
   const setInput = (next: Input) => setState({ input: next, version: version + 1 });
   const frames = useMemo(() => runAlgorithm(algo, input), [algo, input]);
   // Keyed by input version so a new trace starts a fresh player at frame 0.
-  return <Player key={version} {...{ algo, lang, onLang, input, setInput, size, setSize, frames }} />;
+  return <Player key={version} {...{ algo, lang, onLang, onLayout, input, setInput, size, setSize, frames }} />;
 }
 
 type PlayerProps = {
   algo: Algorithm;
   lang: LangId;
   onLang: (l: LangId) => void;
+  onLayout: (l: LayoutId) => void;
   input: Input;
   setInput: (i: Input) => void;
   size: number;
@@ -49,7 +61,7 @@ type PlayerProps = {
   frames: (ArrayFrame | GraphFrame)[];
 };
 
-function Player({ algo, lang, onLang, input, setInput, size, setSize, frames }: PlayerProps) {
+function Player({ algo, lang, onLang, onLayout, input, setInput, size, setSize, frames }: PlayerProps) {
   const [speed, setSpeed] = useState(2);
   const { index, playing, last, dispatch } = usePlayer(frames.length, SPEEDS[speed].ms);
   const frame = frames[index];
@@ -70,22 +82,7 @@ function Player({ algo, lang, onLang, input, setInput, size, setSize, frames }: 
   return (
     <div className="workspace">
       <section className="stage">
-        <header className="stage-head">
-          <div>
-            <h1>{algo.name}</h1>
-            <p className="summary">{algo.summary}</p>
-          </div>
-          <dl className="complexity" aria-label="Complexity">
-            <div>
-              <dt>Time</dt>
-              <dd>{algo.complexity.time}</dd>
-            </div>
-            <div>
-              <dt>Space</dt>
-              <dd>{algo.complexity.space}</dd>
-            </div>
-          </dl>
-        </header>
+        <h1>{algo.name}</h1>
 
         <div className="input-bar">
           {input.kind === "sorting" ? (
@@ -102,10 +99,30 @@ function Player({ algo, lang, onLang, input, setInput, size, setSize, frames }: 
             </>
           ) : (
             <>
-              <span className="hint">Click a node to start from it.</span>
-              {algo.kind === "graph" && algo.weighted && (
-                <button onClick={() => setInput({ ...input, graph: sampleGraph(true) })}>Random weights</button>
+              <label>
+                Layout
+                <select
+                  value={input.layout}
+                  onChange={(e) => {
+                    const layout = e.target.value as LayoutId;
+                    onLayout(layout);
+                    setInput({ kind: "graph", layout, graph: buildGraph(layout), start: 0 });
+                  }}
+                >
+                  {GRAPH_LAYOUTS.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {input.layout === "random" && (
+                <button onClick={() => setInput({ ...input, graph: buildGraph("random"), start: 0 })}>New graph</button>
               )}
+              {algo.kind === "graph" && algo.weighted && (
+                <button onClick={() => setInput({ ...input, graph: withRandomWeights(input.graph) })}>Random weights</button>
+              )}
+              <span className="hint">Click a node to start there.</span>
             </>
           )}
         </div>
@@ -184,6 +201,7 @@ function Player({ algo, lang, onLang, input, setInput, size, setSize, frames }: 
       </section>
 
       <CodePanel code={algo.code} lang={lang} onLang={onLang} activeLabel={frame.line} />
+      <AboutCard about={algo.about} complexity={algo.complexity} />
     </div>
   );
 }

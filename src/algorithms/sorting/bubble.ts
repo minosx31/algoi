@@ -5,9 +5,18 @@ export const bubbleSort: SortingAlgorithm = {
   id: "bubble-sort",
   name: "Bubble Sort",
   kind: "sorting",
-  summary:
-    "Repeatedly walks the array, swapping adjacent pairs that are out of order. After pass i, the i largest values have bubbled to the end.",
-  complexity: { time: "O(n²)", space: "O(1)" },
+  about: {
+    summary: "Sweeps the array repeatedly, swapping adjacent out-of-order pairs, so the largest remaining value bubbles to the end on each pass.",
+    invariants: [
+      "After pass i, the last i positions hold the i largest values in their final order.",
+      "A pass only ever moves the current maximum of the unsorted prefix to its end.",
+    ],
+    useCases: [
+      "Teaching: the simplest sort to reason about and trace by hand.",
+      "Tiny or nearly sorted arrays, when written with an early exit on a pass that makes no swaps (this version has none, so its best case is still O(n²)).",
+    ],
+  },
+  complexity: { best: "O(n²)", average: "O(n²)", worst: "O(n²)", space: "O(1)" },
   code: {
     pseudo: `
 procedure bubbleSort(A)

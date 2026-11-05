@@ -5,9 +5,20 @@ export const mergeSort: SortingAlgorithm = {
   id: "merge-sort",
   name: "Merge Sort",
   kind: "sorting",
-  summary:
-    "Splits the array in half, sorts each half recursively, then merges the two sorted halves by repeatedly taking the smaller front value. A one-element range is already sorted.",
-  complexity: { time: "O(n log n)", space: "O(n)" },
+  about: {
+    summary: "Splits the array in half, sorts each half recursively, then merges the two sorted halves by repeatedly taking the smaller front value.",
+    invariants: [
+      "Each recursive call returns its range fully sorted.",
+      "During a merge, the output holds the smallest values of both halves seen so far, in order.",
+      "Ties take from the left half first, so the sort is stable.",
+    ],
+    useCases: [
+      "Guaranteed O(n log n) regardless of input order.",
+      "Stable sorting, e.g. sorting records by a second key.",
+      "Linked lists and external sorting of data too large for memory.",
+    ],
+  },
+  complexity: { best: "O(n log n)", average: "O(n log n)", worst: "O(n log n)", space: "O(n)" },
   code: {
     pseudo: `
 procedure mergeSort(A, lo, hi)

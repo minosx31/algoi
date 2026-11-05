@@ -6,9 +6,19 @@ export const dfs: GraphAlgorithm = {
   name: "Depth-First Search",
   kind: "graph",
   weighted: false,
-  summary:
-    "Goes as deep as possible along one path before backing up. Each recursive call explores one node, so the call stack always holds the path from the start to the node being explored.",
-  complexity: { time: "O(V + E)", space: "O(V)" },
+  about: {
+    summary: "Goes as deep as possible along one path before backing up, exploring each node once.",
+    invariants: [
+      "The call stack always holds the path from the start to the node being explored.",
+      "A node finishes only after every node reachable through it has been discovered.",
+    ],
+    useCases: [
+      "Cycle detection and topological sorting (finish order).",
+      "Finding connected or strongly connected components.",
+      "Maze generation and backtracking search.",
+    ],
+  },
+  complexity: { best: "O(V + E)", average: "O(V + E)", worst: "O(V + E)", space: "O(V)" },
   code: {
     pseudo: `
 procedure DFS(G, s)

@@ -5,9 +5,19 @@ export const insertionSort: SortingAlgorithm = {
   id: "insertion-sort",
   name: "Insertion Sort",
   kind: "sorting",
-  summary:
-    "Grows a sorted prefix one element at a time: take the next value and slide it left past every larger value until it fits. Before step i, A[0..i−1] is sorted.",
-  complexity: { time: "O(n²)", space: "O(1)" },
+  about: {
+    summary: "Grows a sorted prefix one element at a time, sliding each new value left past every larger value until it fits.",
+    invariants: [
+      "Before step i, A[0..i−1] is sorted (though not necessarily final).",
+      "Equal values never pass each other, so the sort is stable.",
+    ],
+    useCases: [
+      "Small arrays: production sorts (Timsort, introsort) switch to it below ~16–32 elements.",
+      "Nearly sorted data, where it runs in close to linear time.",
+      "Online sorting, where values arrive one at a time.",
+    ],
+  },
+  complexity: { best: "O(n)", average: "O(n²)", worst: "O(n²)", space: "O(1)" },
   code: {
     pseudo: `
 procedure insertionSort(A)

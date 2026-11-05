@@ -6,9 +6,19 @@ export const bfs: GraphAlgorithm = {
   name: "Breadth-First Search",
   kind: "graph",
   weighted: false,
-  summary:
-    "Explores the graph in rings: every node one edge away, then two, and so on. A FIFO queue holds the frontier, so the first time a node is reached is along a shortest (fewest-edges) path.",
-  complexity: { time: "O(V + E)", space: "O(V)" },
+  about: {
+    summary: "Explores the graph in rings, every node one edge away, then two, and so on, using a FIFO queue as the frontier.",
+    invariants: [
+      "The queue holds nodes in non-decreasing distance order, differing by at most 1.",
+      "A node's distance is final the moment it is first discovered.",
+    ],
+    useCases: [
+      "Shortest paths by edge count in unweighted graphs (mazes, social “degrees of separation”).",
+      "Level-order traversal of trees.",
+      "Checking whether a graph is bipartite or connected.",
+    ],
+  },
+  complexity: { best: "O(V + E)", average: "O(V + E)", worst: "O(V + E)", space: "O(V)" },
   code: {
     pseudo: `
 procedure BFS(G, s)

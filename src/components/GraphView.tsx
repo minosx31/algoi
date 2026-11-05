@@ -11,8 +11,14 @@ type Props = {
 const R = 22;
 
 export function GraphView({ graph, frame, start, weighted, onPickStart }: Props) {
+  const xs = graph.nodes.map((n) => n.x);
+  const ys = graph.nodes.map((n) => n.y);
+  const pad = R + 16;
+  const minX = Math.min(...xs) - pad;
+  const minY = Math.min(...ys) - pad;
+  const viewBox = `${minX} ${minY} ${Math.max(...xs) + pad - minX} ${Math.max(...ys) + pad + 20 - minY}`;
   return (
-    <svg className="graph-view" viewBox="20 0 640 440" role="img" aria-label="Graph">
+    <svg className="graph-view" viewBox={viewBox} role="img" aria-label="Graph">
       {graph.edges.map(({ u, v, w }) => {
         const a = graph.nodes[u];
         const b = graph.nodes[v];
