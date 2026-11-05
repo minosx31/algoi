@@ -66,6 +66,19 @@ try {
     await page.screenshot({ path: `${shots}/${algo.id}-end.png` });
   }
 
+  await page.goto(`${base}#/bubble-sort`);
+  await page.waitForSelector("h1");
+  for (let i = 0; i < 5; i++) await page.getByRole("button", { name: "Next step" }).click();
+  const size = (await page.locator(".input-bar input[type=range]").boundingBox())!;
+  const y = size.y + size.height / 2;
+  await page.mouse.move(size.x + 6, y);
+  await page.mouse.down();
+  for (let k = 1; k <= 10; k++) await page.mouse.move(size.x + 6 + (size.width - 12) * (k / 10), y, { steps: 2 });
+  await page.mouse.up();
+  assert((await page.locator(".input-bar strong").textContent()) === "48", "size slider can be dragged end to end");
+  assert((await page.locator(".bar").count()) === 48, "dragging the size slider rebuilds the array");
+  assert((await page.locator(".counter").textContent())!.startsWith("1 /"), "a new array restarts playback at step 1");
+
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${base}#/${ALGORITHMS[0].id}`);
   await page.waitForSelector("h1");

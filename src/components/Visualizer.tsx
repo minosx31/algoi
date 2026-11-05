@@ -42,11 +42,9 @@ type VisualizerProps = {
 
 export function Visualizer({ algo, lang, onLang, layout, onLayout }: VisualizerProps) {
   const [size, setSize] = useState(16);
-  const [{ input, version }, setState] = useState(() => ({ input: freshInput(algo, size, layout), version: 0 }));
-  const setInput = (next: Input) => setState({ input: next, version: version + 1 });
+  const [input, setInput] = useState(() => freshInput(algo, size, layout));
   const frames = useMemo(() => runAlgorithm(algo, input), [algo, input]);
-  // Keyed by input version so a new trace starts a fresh player at frame 0.
-  return <Player key={version} {...{ algo, lang, onLang, onLayout, input, setInput, size, setSize, frames }} />;
+  return <Player {...{ algo, lang, onLang, onLayout, input, setInput, size, setSize, frames }} />;
 }
 
 type PlayerProps = {
@@ -63,7 +61,7 @@ type PlayerProps = {
 
 function Player({ algo, lang, onLang, onLayout, input, setInput, size, setSize, frames }: PlayerProps) {
   const [speed, setSpeed] = useState(2);
-  const { index, playing, last, dispatch } = usePlayer(frames.length, SPEEDS[speed].ms);
+  const { index, playing, last, dispatch } = usePlayer(frames, SPEEDS[speed].ms);
   const frame = frames[index];
 
   useEffect(() => {
