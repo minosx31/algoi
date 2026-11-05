@@ -1,32 +1,28 @@
-# Algorithm Visualizer - Technical Overview
+# Algorithm Visualizer
 
-This project is a React-based interactive visualizer for sorting and graph algorithms, designed with a focus on education and premium aesthetics.
+Step through sorting and graph algorithms while the matching line of code lights up in Pseudocode, Python, C++, Java, or JavaScript.
 
-## Tech Stack
-- **Frontend**: React 18, TypeScript, Vite
-- **Styling**: Vanilla CSS with CSS Custom Properties (Variables)
-- **Animation**: Framer Motion & CSS Transitions
-- **Package Manager**: Bun
+```sh
+bun install
+bun run dev      # http://localhost:5173
+bun run test     # trace correctness + every language has every traced line
+bun run verify   # builds, then drives every algorithm in headless Chromium
+```
 
-## Implementation Details
+`verify` needs a Playwright browser once: `bunx playwright install chromium-headless-shell`.
 
-### Animation Logic
-The core challenge in algorithm visualization is synchronizing the synchronous algorithm execution with the asynchronous visual updates.
+## How it works
 
-**Our Approach:**
-1.  **Detach Algorithm from View**: The algorithm logic (e.g., `bubbleSort`) does not directly manipulate the DOM or React state. Instead, it runs on a copy of the data and returns a list of **steps** or **animations**.
-    *   Example Step: `{ type: 'swap', indices: [1, 2] }`
-2.  **Animation Loop**: The React component (`SortingVisualizer`) iterates through these steps.
-    *   For each step, it awaits a `Promise` that resolves after a delay (controlled by the speed slider).
-    *   It then updates the React state to reflect that single step (e.g., swapping elements, changing colors).
-3.  **Framer Motion**: We use `framer-motion`'s `layout` prop on the Bar components. This allows React to simply reorder the DOM elements, and Framer Motion automatically calculates the transforms to animate them smoothly from their old position to their new position.
+An algorithm is one object in `src/algorithms/index.ts`. Its `run` executes the real algorithm against a tracer (`src/core/trace.ts`) that records a full snapshot frame at each interesting moment. Each frame carries a `line` label, a one-sentence `note`, and the variables in scope. The UI only plays frames back, so stepping backwards and scrubbing are free.
 
-### Project Structure
-- `src/algorithms/`: Pure TypeScript implementations of algorithms returning animation steps.
-- `src/components/`: React components for the UI.
-    - `SortingVisualizer.tsx`: Manages state playback for sorting.
-    - `GraphVisualizer.tsx`: Manages grid state and BFS plotting.
-- `src/styles/`: Global CSS variables for the dark theme.
+Code listings are plain strings per language. A line ending in `@@label` is tagged with that label, and the tag is stripped before display. A frame whose `line` is `compare` highlights the `compare`-tagged line(s) in whichever language is selected. That is the only coupling between a trace and its listings.
 
-## Extensibility
-New sorting algorithms can be added by implementing the `SortingAlgorithm` interface in `src/algorithms/types.ts` and adding them to the `ALGORITHMS` objects. The visualizer will automatically pick them up and display them in the dropdown.
+## Adding an algorithm
+
+1. Copy the closest existing file (`src/algorithms/sorting/bubble.ts` or `src/algorithms/graph/bfs.ts`).
+2. Write the five listings, tagging lines with `@@label`.
+3. Drive the tracer in `run`, calling `t.step(label, note, ...)`.
+4. Append it to `ALGORITHMS` in `src/algorithms/index.ts`.
+5. `bun run test` fails if any traced label is missing from any language, or if the result is wrong.
+
+A new kind of visual (trees, DP tables, grids) means a new frame type in `src/core/types.ts`, a variant in the `Algorithm` union, and a view component next to `ArrayView` and `GraphView`. A new language means one entry in `LANGUAGES` plus a listing in every algorithm; the test enforces the second part.

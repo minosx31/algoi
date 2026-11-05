@@ -1,63 +1,69 @@
-import { motion } from 'framer-motion';
-import { useState } from 'react';
-import { SortingVisualizer } from './components/SortingVisualizer';
-import { GraphVisualizer } from './components/GraphVisualizer';
+import { useEffect, useState } from "react";
+import { ALGORITHMS, findAlgorithm } from "./algorithms";
+import { LANGUAGES, type Category, type LangId } from "./core/types";
+import { Visualizer } from "./components/Visualizer";
 
-function App() {
-  const [activeTab, setActiveTab] = useState<'sorting' | 'graph'>('sorting');
+const CATEGORY_LABELS: Record<Category, string> = { sorting: "Sorting", graph: "Graph" };
+
+const routeId = () => window.location.hash.replace(/^#\/?/, "");
+
+function storedLang(): LangId {
+  try {
+    const v = localStorage.getItem("lang");
+    if (LANGUAGES.some((l) => l.id === v)) return v as LangId;
+  } catch {
+    /* storage unavailable */
+  }
+  return "python";
+}
+
+export function App() {
+  const [id, setId] = useState(routeId);
+  const [lang, setLang] = useState<LangId>(storedLang);
+  const algo = findAlgorithm(id) ?? ALGORITHMS[0];
+
+  useEffect(() => {
+    const onHash = () => setId(routeId());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  const chooseLang = (l: LangId) => {
+    setLang(l);
+    try {
+      localStorage.setItem("lang", l);
+    } catch {
+      /* storage unavailable */
+    }
+  };
+
+  const categories = Object.keys(CATEGORY_LABELS) as Category[];
 
   return (
-    <div className="app-container" style={{ padding: 'var(--spacing-lg)' }}>
-      <header style={{ marginBottom: 'var(--spacing-xl)', textAlign: 'center' }}>
-        <motion.h1 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{ fontSize: '2.5rem', fontWeight: 700, color: 'hsl(var(--color-primary))', marginBottom: 'var(--spacing-xs)' }}
-        >
-          Algorithm Visualizer
-        </motion.h1>
-        <p style={{ color: 'hsl(var(--text-secondary))' }}>
-          Interactive visualization of sorting and graph algorithms.
-        </p>
-      </header>
-
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-lg)' }}>
-        <TabButton 
-          isActive={activeTab === 'sorting'} 
-          onClick={() => setActiveTab('sorting')}
-        >
-          Sorting
-        </TabButton>
-        <TabButton 
-          isActive={activeTab === 'graph'} 
-          onClick={() => setActiveTab('graph')}
-        >
-          Graphs
-        </TabButton>
-      </div>
-
-      <main style={{ maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
-        {activeTab === 'sorting' ? <SortingVisualizer /> : <GraphVisualizer />}
+    <div className="app">
+      <nav className="sidebar" aria-label="Algorithms">
+        <a className="brand" href="#/">
+          Algorithm<span>Visualizer</span>
+        </a>
+        {categories.map((cat) => (
+          <div key={cat} className="group">
+            <h2>{CATEGORY_LABELS[cat]}</h2>
+            <ul>
+              {ALGORITHMS.filter((a) => a.kind === cat).map((a) => (
+                <li key={a.id}>
+                  <a href={`#/${a.id}`} aria-current={a.id === algo.id ? "page" : undefined}>
+                    {a.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+        <p className="keys">Space play/pause · ← → step</p>
+      </nav>
+      <main>
+        <Visualizer key={algo.id} algo={algo} lang={lang} onLang={chooseLang} />
       </main>
     </div>
   );
 }
-
-const TabButton = ({ children, isActive, onClick }: { children: React.ReactNode; isActive: boolean; onClick: () => void }) => (
-  <button
-    onClick={onClick}
-    style={{
-      padding: '0.5rem 1.5rem',
-      borderRadius: 'var(--radius-full)',
-      background: isActive ? 'hsl(var(--color-primary))' : 'transparent',
-      color: isActive ? 'white' : 'hsl(var(--text-secondary))',
-      border: isActive ? 'none' : '1px solid hsl(var(--bg-tertiary))',
-      transition: 'all var(--transition-normal)',
-      fontWeight: 500
-    }}
-  >
-    {children}
-  </button>
-);
-
-export default App;
