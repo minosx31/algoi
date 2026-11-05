@@ -26,8 +26,15 @@ export function CodePanel({ code, lang, onLang, activeLabel }: Props) {
   );
   const listRef = useRef<HTMLOListElement>(null);
 
+  // Scroll only the code box; scrollIntoView would also scroll the page away from the visualization.
   useEffect(() => {
-    listRef.current?.querySelector(".active")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    const list = listRef.current;
+    const line = list?.querySelector<HTMLElement>(".active");
+    if (!list || !line) return;
+    const top = line.offsetTop;
+    if (top < list.scrollTop || top + line.offsetHeight > list.scrollTop + list.clientHeight) {
+      list.scrollTo({ top: top - list.clientHeight / 3, behavior: "smooth" });
+    }
   }, [activeLabel, lang]);
 
   return (

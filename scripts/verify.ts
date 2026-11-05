@@ -68,6 +68,11 @@ try {
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${base}#/${ALGORITHMS[0].id}`);
+  await page.waitForSelector("h1");
+  for (let i = 0; i < 25; i++) await page.keyboard.press("ArrowRight");
+  await page.waitForTimeout(600);
+  const scrolled = await page.evaluate(() => window.scrollY);
+  assert(scrolled === 0, `mobile: stepping keeps the page still (scrollY ${scrolled})`);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   assert(overflow <= 0, `mobile: no horizontal scroll (overflow ${overflow}px)`);
   await page.screenshot({ path: `${shots}/mobile.png`, fullPage: true });

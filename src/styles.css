@@ -576,6 +576,7 @@ main {
   font-weight: var(--weight-bold);
 }
 .code {
+  position: relative;
   margin: 0;
   padding: var(--space-3) 0;
   list-style: none;
