@@ -1,4 +1,7 @@
-# Algorithm Visualizer
+# algoi!
+
+*algorithms, but すごい (sugoi).*
+
 
 Step through sorting and graph algorithms while the matching line of code lights up in Pseudocode, Python, C++, Java, or JavaScript.
 

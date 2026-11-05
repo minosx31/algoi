@@ -42,8 +42,9 @@ export function App() {
   return (
     <div className="app">
       <nav className="sidebar" aria-label="Algorithms">
-        <a className="brand" href="#/">
-          Algorithm<span>Visualizer</span>
+        <a className="brand" href="#/" aria-label="algoi home">
+          algoi<span>!</span>
+          <small>algorithms, but すごい</small>
         </a>
         <select
           className="algo-picker"
