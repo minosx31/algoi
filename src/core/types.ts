@@ -46,6 +46,23 @@ export type Graph = {
   edges: { u: number; v: number; w: number }[];
 };
 
+export type CellMark = "probe" | "hit" | "miss" | "new" | "moved" | "tomb" | "empty";
+
+/** `id` keeps a cell's DOM node across frames, so a cell that changes position slides there. */
+export type Cell = { id: string; text: string; sub?: string; mark?: CellMark };
+
+/** A point on a hash ring, `angle` degrees clockwise from the top. `tone` picks the owning server's colour. */
+export type RingPoint = { id: string; text: string; angle: number; tone: number; mark?: CellMark };
+
+/** A ring row draws each node's arc back to the previous node, so the arc shows which keys it owns. */
+export type OpsRow = { title: string; cells: Cell[] } | { title: string; ring: { nodes: RingPoint[]; keys: RingPoint[] } };
+
+export type OpsFrame = FrameBase & {
+  log: { op: string; result?: string }[];
+  at: number;
+  rows: OpsRow[];
+};
+
 /** Every algorithm documents itself in the same fixed structure. */
 export type About = {
   summary: string;
@@ -55,7 +72,7 @@ export type About = {
 
 export type Complexity = { best: string; average: string; worst: string; space: string };
 
-export const TOPIC_LABELS = { sorting: "Sorting", graph: "Graph" } as const;
+export const TOPIC_LABELS = { sorting: "Sorting", graph: "Graph", systems: "System design" } as const;
 export type Topic = keyof typeof TOPIC_LABELS;
 
 type AlgorithmBase = {
@@ -78,6 +95,17 @@ export type GraphAlgorithm = AlgorithmBase & {
   run: (graph: Graph, start: number) => GraphFrame[];
 };
 
-export type Algorithm = SortingAlgorithm | GraphAlgorithm;
+/**
+ * Each structure has its own op type. Method syntax keeps the parameters bivariant,
+ * so an `OpsAlgorithm<LruOp>` fits the union; the script always comes from the same algorithm's `makeInput`.
+ */
+export type OpsAlgorithm<Op = unknown> = AlgorithmBase & {
+  kind: "ops";
+  makeInput(size: number): Op[];
+  solve(script: readonly Op[]): string[];
+  run(script: readonly Op[]): OpsFrame[];
+};
+
+export type Algorithm = SortingAlgorithm | GraphAlgorithm | OpsAlgorithm;
 
 export const edgeKey = (u: number, v: number) => (u < v ? `${u}-${v}` : `${v}-${u}`);

@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import { ArrayView } from "../components/ArrayView";
 import { GraphView } from "../components/GraphView";
+import { OpsView } from "../components/OpsView";
 import { GRAPH_LAYOUTS, buildGraph, randomArray, withRandomWeights, type LayoutId } from "./inputs";
 import type { Algorithm, Graph } from "./types";
 
@@ -108,7 +109,30 @@ const graph: ViewRow<"graph", GraphInput> = {
   endState: { all: ".node", done: '.node[data-mark="visited"]', label: "every node ends visited" },
 };
 
-export const VIEWS = { sorting, graph } satisfies { [K in Kind]: ViewRow<K, any> };
+const OPS_SIZE = { initial: 12, max: 40 };
+
+type OpsInput = { script: unknown[] };
+
+const ops: ViewRow<"ops", OpsInput> = {
+  makeInput: (algo) => ({ script: algo.makeInput(OPS_SIZE.initial) }),
+  largestInput: (algo) => ({ script: algo.makeInput(OPS_SIZE.max) }),
+  run: (algo, { script }) => algo.run(script),
+  Canvas: ({ frame }) => <OpsView frame={frame} />,
+  Controls: ({ algo, setInput }) => (
+    <button onClick={() => setInput({ script: algo.makeInput(OPS_SIZE.initial) })}>New script</button>
+  ),
+  legend: [
+    ["probe", "Checking"],
+    ["hit", "Hit"],
+    ["miss", "Miss or removed"],
+    ["new", "Written"],
+    ["moved", "Moved"],
+    ["tomb", "Tombstone"],
+  ],
+  endState: { all: ".ops-log li", done: '.ops-log li[data-mark="done"]', label: "every op in the log has a result" },
+};
+
+export const VIEWS = { sorting, graph, ops } satisfies { [K in Kind]: ViewRow<K, any> };
 
 export type Input = ReturnType<(typeof VIEWS)[Kind]["makeInput"]>;
 export type Frame = FrameOf<Kind>;

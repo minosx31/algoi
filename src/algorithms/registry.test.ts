@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { ALGORITHMS } from "./index";
 import { labelsOf } from "../core/code";
 import { GRAPH_LAYOUTS, buildGraph, randomArray, withRandomWeights } from "../core/inputs";
-import { LANGUAGES, TOPIC_LABELS, type Graph } from "../core/types";
+import { LANGUAGES, TOPIC_LABELS, type Cell, type Graph, type OpsFrame } from "../core/types";
 import { VIEWS, viewOf } from "../core/views";
 
 function framesOf(algo: (typeof ALGORITHMS)[number]) {
@@ -34,6 +34,43 @@ function shortestWeighted(g: Graph, s: number) {
     }
   return d;
 }
+
+function mulberry32(seed: number) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function seeded<T>(seed: number, fn: () => T): T {
+  const random = Math.random;
+  Math.random = mulberry32(seed);
+  try {
+    return fn();
+  } finally {
+    Math.random = random;
+  }
+}
+
+const cellsOf = (f: OpsFrame, row = 0): Cell[] => {
+  const r = f.rows[row];
+  return "cells" in r ? r.cells : [];
+};
+
+/** The case each structure exists to teach, read from the frames a viewer steps through. */
+const OPS_CASES: Record<string, (frames: OpsFrame[]) => boolean> = {
+  "lru-cache": (frames) => {
+    const full = frames.filter((f) => f.line === "full");
+    const touch = frames.filter((f) => f.line === "touch");
+    const evictsBack = (f: OpsFrame) => {
+      const cells = cellsOf(f);
+      return cells.findIndex((c) => c.mark === "miss") === cells.filter((c) => c.text !== "").length - 1;
+    };
+    return full.length > 0 && full.every(evictsBack) && touch.length > 0 && touch.every((f) => cellsOf(f)[0].mark === "hit");
+  },
+};
 
 const ids = ALGORITHMS.map((a) => a.id);
 
@@ -106,6 +143,16 @@ describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
           const want = shortestWeighted(g, start);
           for (const node of g.nodes) expect(last.labels[node.id]).toBe(String(want[node.id]));
         }
+      }
+    });
+  } else if (algo.kind === "ops") {
+    test("200 seeded scripts log what solve() predicts, without mutating the script, and teach their case", () => {
+      for (let seed = 1; seed <= 200; seed++) {
+        const script = seeded(seed, () => algo.makeInput(seed % 2 ? 12 : 40));
+        const frames = algo.run(Object.freeze(script.map((op) => Object.freeze(op))));
+        const results = frames[frames.length - 1].log.map((e) => e.result);
+        expect({ seed, results }).toEqual({ seed, results: algo.solve(script) });
+        expect({ seed, teaches: OPS_CASES[algo.id](frames) }).toEqual({ seed, teaches: true });
       }
     });
   }
