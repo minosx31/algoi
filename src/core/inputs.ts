@@ -126,3 +126,34 @@ export function buildGraph(layout: LayoutId): Graph {
 export function withRandomWeights(graph: Graph): Graph {
   return { ...graph, edges: graph.edges.map((e) => ({ ...e, w: 1 + Math.floor(Math.random() * 9) })) };
 }
+
+/**
+ * Distinct keys from 1 to 99 in insertion order (n ≥ 3). Inserted into a BST they give a tree that fits the canvas,
+ * a root with two children, a root successor reached by stepping left at least once (n ≥ 5), and a last key that is
+ * a leaf other than that successor, so the BST page always shows a two-child delete and a leaf delete.
+ */
+export function randomKeys(n: number): number[] {
+  for (;;) {
+    const picked = new Set<number>();
+    while (picked.size < n) picked.add(1 + Math.floor(Math.random() * 99));
+    const keys = [...picked];
+    const [root] = keys;
+    const left = new Map<number, number>();
+    const right = new Map<number, number>();
+    const side = (key: number, parent: number) => (key < parent ? left : right);
+    let height = 0;
+    for (const key of keys.slice(1)) {
+      let parent = root;
+      let depth = 1;
+      for (; side(key, parent).has(parent); depth++) parent = side(key, parent).get(parent)!;
+      side(key, parent).set(parent, key);
+      height = Math.max(height, depth);
+    }
+    const rootRight = right.get(root);
+    let successor = rootRight;
+    while (successor !== undefined && left.has(successor)) successor = left.get(successor)!;
+    const drawable = height <= Math.ceil(Math.log2(n + 1)) + 1;
+    const stepsLeft = n < 5 || (rootRight !== undefined && left.has(rootRight));
+    if (drawable && stepsLeft && left.has(root) && rootRight !== undefined && successor !== keys[n - 1]) return keys;
+  }
+}

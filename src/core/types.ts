@@ -41,6 +41,20 @@ export type GraphFrame = FrameBase & {
   aux: { title: string; items: string[] };
 };
 
+export type TreeMark = "compare" | "path" | "swap" | "target" | "done";
+
+/** A binary node lists `[left, right]` with `null` for a missing side; an n-ary node lists only real children. */
+export type TreeNode = { id: number; value: number | string; children: (number | null)[]; mark?: TreeMark };
+
+export type TreeFrame = FrameBase & {
+  nodes: TreeNode[];
+  roots: number[];
+  /** Node ids in backing-array order, for structures stored in an array such as a binary heap. */
+  array?: number[];
+  aux: { title: string; items: string[] };
+  answer?: string;
+};
+
 export type Graph = {
   nodes: { id: number; name: string; x: number; y: number }[];
   edges: { u: number; v: number; w: number }[];
@@ -55,7 +69,7 @@ export type About = {
 
 export type Complexity = { best: string; average: string; worst: string; space: string };
 
-export const TOPIC_LABELS = { sorting: "Sorting", graph: "Graph" } as const;
+export const TOPIC_LABELS = { sorting: "Sorting", graph: "Graph", tree: "Trees" } as const;
 export type Topic = keyof typeof TOPIC_LABELS;
 
 type AlgorithmBase = {
@@ -78,6 +92,11 @@ export type GraphAlgorithm = AlgorithmBase & {
   run: (graph: Graph, start: number) => GraphFrame[];
 };
 
-export type Algorithm = SortingAlgorithm | GraphAlgorithm;
+export type TreeAlgorithm = AlgorithmBase & {
+  kind: "tree";
+  run: (keys: number[]) => TreeFrame[];
+};
+
+export type Algorithm = SortingAlgorithm | GraphAlgorithm | TreeAlgorithm;
 
 export const edgeKey = (u: number, v: number) => (u < v ? `${u}-${v}` : `${v}-${u}`);
