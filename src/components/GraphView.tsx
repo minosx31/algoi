@@ -5,12 +5,13 @@ type Props = {
   frame: GraphFrame;
   start: number;
   weighted: boolean;
+  goal?: string | number;
   onPickStart: (id: number) => void;
 };
 
 const R = 22;
 
-export function GraphView({ graph, frame, start, weighted, onPickStart }: Props) {
+export function GraphView({ graph, frame, start, weighted, goal, onPickStart }: Props) {
   const xs = graph.nodes.map((n) => n.x);
   const ys = graph.nodes.map((n) => n.y);
   const pad = R + 16;
@@ -40,6 +41,7 @@ export function GraphView({ graph, frame, start, weighted, onPickStart }: Props)
           className="node"
           data-mark={frame.nodes[n.id] ?? "idle"}
           data-start={n.id === start || undefined}
+          data-goal={n.name === goal || undefined}
           onClick={() => onPickStart(n.id)}
           transform={`translate(${n.x} ${n.y})`}
         >

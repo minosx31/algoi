@@ -218,7 +218,7 @@ function aStar(adj, pos, s, goal, scale) {
       "path",
       `Walk the parents back from ${goalName}: ${path.map((i) => t.name(i)).join(" → ")}, cost ${g.get(goal)}. Settled ${settled} of ${nodes.length} nodes.`,
       aux(),
-      { vars: { cost: g.get(goal)! } },
+      { vars: { cost: g.get(goal)!, goal: goalName } },
     );
     return t.frames;
   },

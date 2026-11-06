@@ -67,6 +67,7 @@ const graph: ViewRow<"graph", GraphInput> = {
       frame={frame}
       start={input.start}
       weighted={algo.weighted}
+      goal={frame.vars?.goal}
       onPickStart={(start) => setInput({ ...input, start })}
     />
   ),
@@ -107,7 +108,11 @@ const graph: ViewRow<"graph", GraphInput> = {
   ],
   endState: (algo) =>
     algo.stopsAtGoal
-      ? { all: '.edge[data-mark="tree"]', done: '.edge[data-mark="tree"]', label: "the path to the goal is drawn" }
+      ? {
+          all: ".node[data-goal]",
+          done: 'svg:has(.edge[data-mark="tree"]) .node[data-goal][data-mark="visited"]',
+          label: "the goal ends visited with a tree edge drawn",
+        }
       : { all: ".node", done: '.node[data-mark="visited"]', label: "every node ends visited" },
 };
 
