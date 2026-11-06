@@ -58,6 +58,10 @@ const cellsOf = (f: OpsFrame, row = 0): Cell[] => {
   const r = f.rows[row];
   return "cells" in r ? r.cells : [];
 };
+const ringKeys = (f: OpsFrame) => {
+  const r = f.rows[0];
+  return "ring" in r ? r.ring.keys : [];
+};
 
 /** The case each structure exists to teach, read from the frames a viewer steps through. */
 const OPS_CASES: Record<string, (frames: OpsFrame[]) => boolean> = {
@@ -69,6 +73,32 @@ const OPS_CASES: Record<string, (frames: OpsFrame[]) => boolean> = {
       return cells.findIndex((c) => c.mark === "miss") === cells.filter((c) => c.text !== "").length - 1;
     };
     return full.length > 0 && full.every(evictsBack) && touch.length > 0 && touch.every((f) => cellsOf(f)[0].mark === "hit");
+  },
+  "bloom-filter": (frames) => {
+    const added = (f: OpsFrame) => cellsOf(f, 1).some((c) => c.text === f.vars?.word);
+    const noFalseNegative = frames.filter((f) => f.line === "absent").every((f) => !added(f));
+    return noFalseNegative && frames.some((f) => f.line === "maybe" && !added(f));
+  },
+  "hash-table": (frames) =>
+    frames.some((f, i) => f.line === "probe" && cellsOf(f)[f.vars!.i as number].text === "†" && ["probe", "match"].includes(frames[i + 1].line)),
+  "token-bucket": (frames) => {
+    const reject = frames.filter((f) => f.line === "reject");
+    return reject.length > 0 && reject.every((f) => cellsOf(f).every((c) => c.text === ""));
+  },
+  "consistent-hashing": (frames) => {
+    let movedAny = false;
+    for (const [i, f] of frames.entries()) {
+      if (f.line !== "move") continue;
+      const r = f.rows[0];
+      const newTone = "ring" in r ? r.ring.nodes.find((n) => n.mark === "new")!.tone : -1;
+      const before = new Map(ringKeys(frames[i - 1]).map((k) => [k.id, k.tone]));
+      for (const k of ringKeys(f)) {
+        if (k.tone === before.get(k.id)) continue;
+        if (k.tone !== newTone || k.mark !== "moved") return false;
+        movedAny = true;
+      }
+    }
+    return movedAny;
   },
 };
 
