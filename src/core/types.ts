@@ -75,6 +75,8 @@ export type SortingAlgorithm = AlgorithmBase & {
 export type GraphAlgorithm = AlgorithmBase & {
   kind: "graph";
   weighted: boolean;
+  /** The trace ends when a goal node settles, so nodes it never reached stay idle. */
+  stopsAtGoal?: boolean;
   run: (graph: Graph, start: number) => GraphFrame[];
 };
 

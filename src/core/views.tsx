@@ -16,7 +16,7 @@ type ViewRow<K extends Kind, I> = {
   Controls: ComponentType<{ algo: AlgoOf<K>; input: I; setInput: (input: I) => void; onLayout: (layout: LayoutId) => void }>;
   Status?: ComponentType<{ frame: FrameOf<K> }>;
   legend: readonly (readonly [mark: string, label: string])[];
-  endState: { all: string; done: string; label: string };
+  endState: (algo: AlgoOf<K>) => { all: string; done: string; label: string };
 };
 
 const SORT_SIZE = { initial: 16, min: 4, max: 48 };
@@ -50,7 +50,7 @@ const sorting: ViewRow<"sorting", SortingInput> = {
     ["active", "Active"],
     ["sorted", "Final position"],
   ],
-  endState: { all: ".bar", done: '.bar[data-mark="sorted"]', label: "every bar ends sorted" },
+  endState: () => ({ all: ".bar", done: '.bar[data-mark="sorted"]', label: "every bar ends sorted" }),
 };
 
 type GraphInput = { layout: LayoutId; graph: Graph; start: number };
@@ -105,7 +105,10 @@ const graph: ViewRow<"graph", GraphInput> = {
     ["visited", "Done"],
     ["tree", "Tree edge"],
   ],
-  endState: { all: ".node", done: '.node[data-mark="visited"]', label: "every node ends visited" },
+  endState: (algo) =>
+    algo.stopsAtGoal
+      ? { all: '.edge[data-mark="tree"]', done: '.edge[data-mark="tree"]', label: "the path to the goal is drawn" }
+      : { all: ".node", done: '.node[data-mark="visited"]', label: "every node ends visited" },
 };
 
 export const VIEWS = { sorting, graph } satisfies { [K in Kind]: ViewRow<K, any> };
