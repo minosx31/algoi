@@ -1,7 +1,7 @@
 import type { ComponentType } from "react";
 import { ArrayView } from "../components/ArrayView";
 import { GraphView } from "../components/GraphView";
-import { GRAPH_LAYOUTS, buildGraph, randomArray, withRandomWeights, type LayoutId } from "./inputs";
+import { buildGraph, layoutsOf, randomArray, withRandomWeights, type LayoutId } from "./inputs";
 import type { Algorithm, Graph } from "./types";
 
 type Kind = Algorithm["kind"];
@@ -55,20 +55,24 @@ const sorting: ViewRow<"sorting", SortingInput> = {
 
 type GraphInput = { layout: LayoutId; graph: Graph; start: number };
 
-const graphInput = (layout: LayoutId): GraphInput => ({ layout, graph: buildGraph(layout), start: 0 });
+const graphInput = (algo: AlgoOf<"graph">, layout: LayoutId): GraphInput => {
+  const offered = layoutsOf(!!algo.directed).some((l) => l.id === layout) ? layout : "mesh";
+  return { layout: offered, graph: buildGraph(offered, algo.directed), start: 0 };
+};
 
 const graph: ViewRow<"graph", GraphInput> = {
-  makeInput: (_, layout) => graphInput(layout),
-  largestInput: () => graphInput("grid"),
+  makeInput: graphInput,
+  largestInput: (algo) => graphInput(algo, "grid"),
   run: (algo, { graph, start }) => algo.run(graph, start),
   Canvas: ({ algo, input, frame, setInput }) => (
     <GraphView
       graph={input.graph}
       frame={frame}
-      start={input.start}
+      start={algo.ignoresStart ? undefined : input.start}
       weighted={algo.weighted}
       goal={frame.vars?.goal}
-      onPickStart={(start) => setInput({ ...input, start })}
+      directed={!!algo.directed}
+      onPickStart={algo.ignoresStart ? undefined : (start) => setInput({ ...input, start })}
     />
   ),
   Controls: ({ algo, input, setInput, onLayout }) => (
@@ -80,19 +84,19 @@ const graph: ViewRow<"graph", GraphInput> = {
           onChange={(e) => {
             const layout = e.target.value as LayoutId;
             onLayout(layout);
-            setInput(graphInput(layout));
+            setInput(graphInput(algo, layout));
           }}
         >
-          {GRAPH_LAYOUTS.map((l) => (
+          {layoutsOf(!!algo.directed).map((l) => (
             <option key={l.id} value={l.id}>
               {l.label}
             </option>
           ))}
         </select>
       </label>
-      {input.layout === "random" && <button onClick={() => setInput(graphInput("random"))}>New graph</button>}
+      {input.layout === "random" && <button onClick={() => setInput(graphInput(algo, "random"))}>New graph</button>}
       {algo.weighted && <button onClick={() => setInput({ ...input, graph: withRandomWeights(input.graph) })}>Random weights</button>}
-      <span className="hint">Click a node to start there.</span>
+      {!algo.ignoresStart && <span className="hint">Click a node to start there.</span>}
     </>
   ),
   Status: ({ frame }) => (
@@ -108,11 +112,13 @@ const graph: ViewRow<"graph", GraphInput> = {
   ],
   endState: (algo) =>
     algo.stopsAtGoal
-      ? {
-          all: ".node[data-goal]",
-          done: 'svg:has(.edge[data-mark="tree"]) .node[data-goal][data-mark="visited"]',
-          label: "the goal ends visited with a tree edge drawn",
-        }
+      ? algo.directed
+        ? { all: '.edge[data-mark="tree"]', done: '.edge[data-mark="tree"]', label: "the cycle is drawn" }
+        : {
+            all: ".node[data-goal]",
+            done: 'svg:has(.edge[data-mark="tree"]) .node[data-goal][data-mark="visited"]',
+            label: "the goal ends visited with a tree edge drawn",
+          }
       : { all: ".node", done: '.node[data-mark="visited"]', label: "every node ends visited" },
 };
 
