@@ -10,11 +10,11 @@ export const radixSort: SortingAlgorithm = {
   kind: "sorting",
   topic: "sorting",
   about: {
-    summary: "Sorts non-negative integers one decimal digit at a time, from the ones digit up, using a stable counting pass on each digit.",
+    summary: "Sorts non-negative integers one decimal digit at a time, from the ones digit up, using a stable counting pass on each digit. Here d is the number of digits in the largest value.",
     invariants: [
       "After pass p, the array is sorted by its lowest p digits.",
       "Each pass is stable, so values with equal digit p keep the order the earlier passes gave them.",
-      "The number of passes is the digit count of the largest value.",
+      "The number of passes is d, the digit count of the largest value.",
     ],
     useCases: [
       "Sorting fixed-width keys such as IDs, phone numbers, and IPv4 addresses.",
@@ -38,7 +38,7 @@ procedure radixSort(A)
       c ← count[d]
       count[d] ← total                          @@prefix
       total ← total + c
-    src ← copy of A
+    src ← copy of A                             @@copy
     for each x in src, in order do
       d ← ⌊x / exp⌋ mod 10
       A[count[d]] ← x                           @@place
@@ -58,7 +58,7 @@ def radix_sort(a):
         total = 0
         for d in range(10):
             count[d], total = total, total + count[d]   @@prefix
-        src = a[:]
+        src = a[:]                              @@copy
         for x in src:
             d = x // exp % 10
             a[count[d]] = x                     @@place
@@ -79,7 +79,7 @@ void radixSort(std::vector<int>& a) {
             count[d] = total;                   @@prefix
             total += c;
         }
-        std::vector<int> src = a;
+        std::vector<int> src = a;               @@copy
         for (int x : src) a[count[x / exp % 10]++] = x;     @@place
         exp *= 10;                              @@next
     }
@@ -99,7 +99,7 @@ static void radixSort(int[] a) {
             count[d] = total;                   @@prefix
             total += c;
         }
-        int[] src = a.clone();
+        int[] src = a.clone();                  @@copy
         for (int x : src) a[count[(int) (x / exp % 10)]++] = x;     @@place
         exp *= 10;                              @@next
     }
@@ -119,7 +119,8 @@ function radixSort(a) {
       count[d] = total;                         @@prefix
       total += c;
     }
-    for (const x of [...a]) a[count[Math.floor(x / exp) % 10]++] = x;   @@place
+    const src = [...a];                         @@copy
+    for (const x of src) a[count[Math.floor(x / exp) % 10]++] = x;   @@place
     exp *= 10;                                  @@next
   }
 }
@@ -134,6 +135,11 @@ function radixSort(a) {
     }
 
     const hi = Math.max(...values);
+    if (hi === 0) {
+      t.markSorted(...values.keys());
+      t.step("pass", "The largest value is 0, so there is no digit to sort by and the array is already sorted.");
+      return t.frames;
+    }
     let exp = 1;
     let pos = 1;
     while (Math.floor(hi / exp) > 0) {
@@ -166,15 +172,17 @@ function radixSort(a) {
         total += c;
       }
 
+      t.step("copy", `Pass ${pos}: copy A into src, then read values from src and write them into A, so no bar is swapped.`, {}, { pass: pos });
+
       const placed: Partial<Record<number, BarMark>> = {};
       for (const item of src) {
         const d = digit(item.value);
         const p = count[d]++;
-        placeAt(t, item, p);
+        const { marks, aside } = placeAt(t, item, p);
         if (last) t.markSorted(p);
         else placed[p] = "active";
-        const note = last ? `Write ${item.value} at index ${p}, its final place.` : `Write ${item.value} at index ${p}, the next free spot for digit ${d}.`;
-        t.step("place", note, { ...placed, [p]: "swap" }, { x: item.value, digit: d, index: p });
+        const note = last ? `Write ${item.value} at index ${p}, its final place${aside}.` : `Write ${item.value} at index ${p}, the next free spot for digit ${d}${aside}.`;
+        t.step("place", note, { ...placed, ...marks, [p]: "swap" }, { x: item.value, digit: d, index: p });
       }
 
       exp *= 10;

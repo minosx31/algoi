@@ -8,7 +8,7 @@ export const countingSort: SortingAlgorithm = {
   kind: "sorting",
   topic: "sorting",
   about: {
-    summary: "Counts how often each value occurs, turns the counts into the index where each value's block starts, then writes every value straight to its place without comparing values.",
+    summary: "Counts how often each value occurs, turns the counts into the index where each value's block starts, then writes every value straight to its place without comparing values. Here k is the largest value plus 1.",
     invariants: [
       "After the prefix pass, count[v] is the number of values smaller than v, which is the index where v's block starts.",
       "Every write lands in its final place, so written bars never move again.",
@@ -34,7 +34,7 @@ procedure countingSort(A)
     c ← count[v]
     count[v] ← total                           @@prefix
     total ← total + c
-  src ← copy of A
+  src ← copy of A                              @@copy
   for each x in src, in order do
     A[count[x]] ← x                            @@place
     count[x] ← count[x] + 1
@@ -50,7 +50,7 @@ def counting_sort(a):
     total = 0
     for v in range(hi + 1):
         count[v], total = total, total + count[v]   @@prefix
-    src = a[:]
+    src = a[:]                                  @@copy
     for x in src:
         a[count[x]] = x                         @@place
         count[x] += 1
@@ -67,7 +67,7 @@ void countingSort(std::vector<int>& a) {
         count[v] = total;                       @@prefix
         total += c;
     }
-    std::vector<int> src = a;
+    std::vector<int> src = a;                   @@copy
     for (int x : src) a[count[x]++] = x;        @@place
 }
 `,
@@ -83,7 +83,7 @@ static void countingSort(int[] a) {
         count[v] = total;                       @@prefix
         total += c;
     }
-    int[] src = a.clone();
+    int[] src = a.clone();                      @@copy
     for (int x : src) a[count[x]++] = x;        @@place
 }
 `,
@@ -99,7 +99,8 @@ function countingSort(a) {
     count[v] = total;                           @@prefix
     total += c;
   }
-  for (const x of [...a]) a[count[x]++] = x;    @@place
+  const src = [...a];                           @@copy
+  for (const x of src) a[count[x]++] = x;       @@place
 }
 `,
   },
@@ -137,11 +138,13 @@ function countingSort(a) {
       total += c;
     }
 
+    t.step("copy", "Copy A into src: counting sort reads values from src and writes them into A, so it never swaps two bars.");
+
     for (const item of src) {
       const p = count[item.value]++;
-      placeAt(t, item, p);
+      const { marks, aside } = placeAt(t, item, p);
       t.markSorted(p);
-      t.step("place", `Write ${item.value} at index ${p}, its final place.`, { [p]: "swap" }, { x: item.value, index: p });
+      t.step("place", `Write ${item.value} at index ${p}, its final place${aside}.`, { ...marks, [p]: "swap" }, { x: item.value, index: p });
     }
     t.step("place", "Every value is written to its place, so the array is sorted.");
     return t.frames;
