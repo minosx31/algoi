@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { ALGORITHMS } from "./index";
 import { labelsOf } from "../core/code";
-import { GRAPH_LAYOUTS, buildGraph, randomArray, withRandomWeights } from "../core/inputs";
-import { LANGUAGES, TOPIC_LABELS, type Graph } from "../core/types";
+import { GRAPH_LAYOUTS, buildGraph, randomArray, randomSearch, withRandomWeights } from "../core/inputs";
+import { LANGUAGES, TOPIC_LABELS, type Graph, type StringAlgorithm, type StringFrame, type StringMark } from "../core/types";
 import { VIEWS, viewOf } from "../core/views";
 
 function framesOf(algo: (typeof ALGORITHMS)[number]) {
@@ -109,4 +109,91 @@ describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
       }
     });
   }
+});
+
+function seeded(seed: number) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function seededSearches(count: number) {
+  const random = Math.random;
+  try {
+    return Array.from({ length: count }, (_, i) => {
+      Math.random = seeded(i + 1);
+      return randomSearch(8 + (i % 25));
+    });
+  } finally {
+    Math.random = random;
+  }
+}
+
+function occurrences(text: string, pattern: string) {
+  const found: number[] = [];
+  for (let i = text.indexOf(pattern); i !== -1; i = text.indexOf(pattern, i + 1)) found.push(i);
+  return found;
+}
+
+const border = (s: string) => {
+  for (let k = s.length - 1; k > 0; k--) if (s.startsWith(s.slice(s.length - k))) return k;
+  return 0;
+};
+const commonPrefix = (s: string, i: number) => {
+  let k = 0;
+  while (i + k < s.length && s[k] === s[i + k]) k++;
+  return k;
+};
+
+describe("string search", () => {
+  const searches = seededSearches(200);
+  const strings = ALGORITHMS.filter((a): a is StringAlgorithm => a.kind === "string");
+  const byId = (id: string) => strings.find((a) => a.id === id)!;
+  const lastOf = (frames: StringFrame[]) => frames[frames.length - 1];
+  const compares = (f: StringFrame) => Number(f.vars?.compares);
+
+  test("every seeded input contains its pattern", () => {
+    for (const { text, pattern } of searches) expect(occurrences(text, pattern).length).toBeGreaterThan(0);
+  });
+
+  test.each(strings.map((a) => [a.id, a] as const))("%s ends with exactly the indexOf matches on 200 seeded inputs", (_, algo) => {
+    for (const { text, pattern } of searches) {
+      const last = lastOf(algo.run(text, pattern));
+      expect({ text, pattern, phase: last.phase, matches: last.matches }).toEqual({ text, pattern, phase: "done", matches: occurrences(text, pattern) });
+    }
+  });
+
+  test("kmp makes at most 2n comparisons after building π", () => {
+    for (const { text, pattern } of searches) {
+      const frames = byId("kmp").run(text, pattern);
+      const built = lastOf(frames.filter((f) => f.phase === "prepare"));
+      expect(compares(lastOf(frames)) - compares(built)).toBeLessThanOrEqual(2 * text.length);
+    }
+  });
+
+  test("the π, Z, and shift tables end equal to their definitions", () => {
+    for (const { text, pattern } of searches) {
+      const m = pattern.length;
+      expect(lastOf(byId("kmp").run(text, pattern)).aux?.values).toEqual([...pattern].map((_, i) => border(pattern.slice(0, i + 1))));
+      const s = `${pattern}$${text}`;
+      expect(lastOf(byId("z-function").run(text, pattern)).aux?.values).toEqual([...s].map((_, i) => (i === 0 ? null : commonPrefix(s, i))));
+      const table = lastOf(byId("horspool").run(text, pattern)).aux!;
+      if (table.under !== "table") throw new Error("horspool shows a keyed table");
+      table.keys.forEach((key, i) => expect(table.values[i]).toBe(key === "other" ? m : m - 1 - pattern.slice(0, -1).lastIndexOf(key)));
+    }
+  });
+
+  test("at least 80% of seeded inputs show each algorithm's key move", () => {
+    const rate = (id: string, seen: (frames: StringFrame[]) => boolean) => searches.filter(({ text, pattern }) => seen(byId(id).run(text, pattern))).length / searches.length;
+    const marked = (f: StringFrame, mark: StringMark) => Object.values(f.marks).includes(mark);
+    const aligns = (frames: StringFrame[]) => frames.flatMap((f) => (f.line === "align" && f.phase === "search" ? [f.offset] : []));
+    expect(rate("naive-search", (fs) => fs.some((f) => marked(f, "match") && marked(f, "mismatch")))).toBeGreaterThanOrEqual(0.8);
+    expect(rate("kmp", (fs) => fs.some((f) => f.line === "shift" && marked(f, "known")))).toBeGreaterThanOrEqual(0.8);
+    expect(rate("z-function", (fs) => fs.some((f) => f.line === "box" && marked(f, "known")))).toBeGreaterThanOrEqual(0.8);
+    expect(rate("horspool", (fs) => aligns(fs).some((s, i, all) => i > 0 && s - all[i - 1] > 1))).toBeGreaterThanOrEqual(0.8);
+    expect(rate("rabin-karp", (fs) => fs.some((f) => f.aux?.marks && Object.values(f.aux.marks).includes("mismatch")))).toBeGreaterThanOrEqual(0.5);
+  });
 });

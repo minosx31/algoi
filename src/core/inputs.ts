@@ -4,6 +4,26 @@ export function randomArray(n: number, max = 100): number[] {
   return Array.from({ length: n }, () => 5 + Math.floor(Math.random() * (max - 5)));
 }
 
+const pick = (chars: string) => chars[Math.floor(Math.random() * chars.length)];
+
+/**
+ * A pattern with a border (so KMP has a non-zero failure value) and a text of
+ * length n built from copies of it, near misses ending in "c", and random letters.
+ * One copy is always planted, so every search finds at least one match.
+ */
+export function randomSearch(n: number): { text: string; pattern: string } {
+  const word = (min: number, max: number) => Array.from({ length: min + Math.floor(Math.random() * (max - min + 1)) }, () => pick("ab")).join("");
+  const border = word(1, 2);
+  const pattern = border + word(1, 2) + border;
+  let text = "";
+  while (text.length < n) {
+    const r = Math.random();
+    text += r < 0.25 ? pattern : r < 0.5 ? pattern.slice(0, -1) + "c" : pick("abc");
+  }
+  const at = Math.floor(Math.random() * (n - pattern.length + 1));
+  return { text: text.slice(0, at) + pattern + text.slice(at + pattern.length, n), pattern };
+}
+
 type Point = [number, number];
 type Shape = { points: Point[]; edges: [number, number][] };
 
