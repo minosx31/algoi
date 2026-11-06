@@ -80,8 +80,9 @@ describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
 
   if (algo.kind === "sorting") {
     test("sorts random arrays, keeps every item, and ends fully marked sorted", () => {
-      for (const n of [0, 1, 2, 7, 25]) {
-        const input = randomArray(n);
+      const threeDistinct = Array.from({ length: 25 }, () => [10, 40, 70][Math.floor(Math.random() * 3)]);
+      for (const input of [0, 1, 2, 7, 25].map((n) => randomArray(n)).concat([threeDistinct])) {
+        const n = input.length;
         const frames = algo.run(input);
         expect(frames.length).toBeGreaterThan(0);
         const last = frames[frames.length - 1];
