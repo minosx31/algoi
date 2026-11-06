@@ -79,18 +79,35 @@ describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
   });
 
   if (algo.kind === "sorting") {
+    const expectSorted = (input: number[]) => {
+      const n = input.length;
+      const frames = algo.run(input);
+      expect(frames.length).toBeGreaterThan(0);
+      const last = frames[frames.length - 1];
+      expect(last.items.map((i) => i.value)).toEqual([...input].sort((a, b) => a - b));
+      expect(last.items.map((i) => i.id).sort((a, b) => a - b)).toEqual(input.map((_, i) => i));
+      for (let i = 0; i < n; i++) expect(last.marks[i]).toBe("sorted");
+      for (const f of frames) expect(new Set(f.items.map((x) => x.id)).size).toBe(n);
+    };
+
     test("sorts random arrays, keeps every item, and ends fully marked sorted", () => {
-      for (const n of [0, 1, 2, 7, 25]) {
-        const input = randomArray(n);
-        const frames = algo.run(input);
-        expect(frames.length).toBeGreaterThan(0);
-        const last = frames[frames.length - 1];
-        expect(last.items.map((i) => i.value)).toEqual([...input].sort((a, b) => a - b));
-        expect(last.items.map((i) => i.id).sort((a, b) => a - b)).toEqual(input.map((_, i) => i));
-        for (let i = 0; i < n; i++) expect(last.marks[i]).toBe("sorted");
-        for (const f of frames) expect(new Set(f.items.map((x) => x.id)).size).toBe(n);
-      }
+      const threeDistinct = Array.from({ length: 25 }, () => [10, 40, 70][Math.floor(Math.random() * 3)]);
+      for (const input of [0, 1, 2, 7, 25].map((n) => randomArray(n)).concat([threeDistinct])) expectSorted(input);
     });
+
+    test("sorts arrays containing zero", () => {
+      for (const input of [[0], [0, 0, 0], [0, 5, 0, 3], [3, 0], [100, 0, 7, 0]]) expectSorted(input);
+    });
+
+    if (algo.id === "counting-sort" || algo.id === "radix-sort") {
+      test("a write that displaces another bar fades it and says so", () => {
+        const frames = algo.run(randomArray(25));
+        expect(frames.some((f) => f.line === "copy")).toBe(true);
+        const places = frames.filter((f) => f.line === "place" && f.note.startsWith("Write"));
+        for (const f of places) expect(Object.values(f.marks).filter((m) => m === "muted").length).toBe(f.note.includes("moved aside") ? 1 : 0);
+        expect(places.some((f) => f.note.includes("moved aside"))).toBe(true);
+      });
+    }
   } else if (algo.kind === "graph") {
     test.each(GRAPH_LAYOUTS.map((l) => l.id))("visits everything with correct final labels on %s", (layout) => {
       for (const start of [0, 5, 9]) {
