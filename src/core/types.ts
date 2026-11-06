@@ -55,9 +55,13 @@ export type About = {
 
 export type Complexity = { best: string; average: string; worst: string; space: string };
 
+export const TOPIC_LABELS = { sorting: "Sorting", graph: "Graph" } as const;
+export type Topic = keyof typeof TOPIC_LABELS;
+
 type AlgorithmBase = {
   id: string;
   name: string;
+  topic: Topic;
   about: About;
   complexity: Complexity;
   code: CodeListings;
@@ -75,6 +79,5 @@ export type GraphAlgorithm = AlgorithmBase & {
 };
 
 export type Algorithm = SortingAlgorithm | GraphAlgorithm;
-export type Category = Algorithm["kind"];
 
 export const edgeKey = (u: number, v: number) => (u < v ? `${u}-${v}` : `${v}-${u}`);

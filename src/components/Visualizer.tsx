@@ -1,27 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Algorithm, ArrayFrame, Graph, GraphFrame, LangId } from "../core/types";
-import { GRAPH_LAYOUTS, buildGraph, randomArray, withRandomWeights, type LayoutId } from "../core/inputs";
+import type { Algorithm, LangId } from "../core/types";
+import type { LayoutId } from "../core/inputs";
+import { viewOf, type Frame, type Input, type View } from "../core/views";
 import { usePlayer } from "./usePlayer";
-import { ArrayView } from "./ArrayView";
-import { GraphView } from "./GraphView";
 import { CodePanel } from "./CodePanel";
 import { AboutCard } from "./AboutCard";
-
-type Input =
-  | { kind: "sorting"; values: number[] }
-  | { kind: "graph"; layout: LayoutId; graph: Graph; start: number };
-
-function freshInput(algo: Algorithm, size: number, layout: LayoutId): Input {
-  return algo.kind === "sorting"
-    ? { kind: "sorting", values: randomArray(size) }
-    : { kind: "graph", layout, graph: buildGraph(layout), start: 0 };
-}
-
-function runAlgorithm(algo: Algorithm, input: Input): (ArrayFrame | GraphFrame)[] {
-  if (algo.kind === "sorting" && input.kind === "sorting") return algo.run(input.values);
-  if (algo.kind === "graph" && input.kind === "graph") return algo.run(input.graph, input.start);
-  throw new Error(`Input kind ${input.kind} does not match ${algo.id}`);
-}
 
 const SPEEDS = [
   { label: "0.25×", ms: 1200 },
@@ -41,25 +24,24 @@ type VisualizerProps = {
 };
 
 export function Visualizer({ algo, lang, onLang, layout, onLayout }: VisualizerProps) {
-  const [size, setSize] = useState(16);
-  const [input, setInput] = useState(() => freshInput(algo, size, layout));
-  const frames = useMemo(() => runAlgorithm(algo, input), [algo, input]);
-  return <Player {...{ algo, lang, onLang, onLayout, input, setInput, size, setSize, frames }} />;
+  const view = viewOf(algo);
+  const [input, setInput] = useState(() => view.makeInput(algo, layout));
+  const frames = useMemo(() => view.run(algo, input), [view, algo, input]);
+  return <Player {...{ algo, view, lang, onLang, onLayout, input, setInput, frames }} />;
 }
 
 type PlayerProps = {
   algo: Algorithm;
+  view: View;
   lang: LangId;
   onLang: (l: LangId) => void;
   onLayout: (l: LayoutId) => void;
   input: Input;
   setInput: (i: Input) => void;
-  size: number;
-  setSize: (n: number) => void;
-  frames: (ArrayFrame | GraphFrame)[];
+  frames: Frame[];
 };
 
-function Player({ algo, lang, onLang, onLayout, input, setInput, size, setSize, frames }: PlayerProps) {
+function Player({ algo, view: { Controls, Canvas, Status, legend }, lang, onLang, onLayout, input, setInput, frames }: PlayerProps) {
   const [speed, setSpeed] = useState(2);
   const { index, playing, last, dispatch } = usePlayer(frames, SPEEDS[speed].ms);
   const frame = frames[index];
@@ -83,63 +65,14 @@ function Player({ algo, lang, onLang, onLayout, input, setInput, size, setSize, 
         <h1>{algo.name}</h1>
 
         <div className="input-bar">
-          {input.kind === "sorting" ? (
-            <>
-              <label>
-                Size <strong>{size}</strong>
-                <input type="range" min={4} max={48} value={size} onChange={(e) => {
-                    setSize(+e.target.value);
-                    setInput({ kind: "sorting", values: randomArray(+e.target.value) });
-                  }}
-                />
-              </label>
-              <button onClick={() => setInput({ kind: "sorting", values: randomArray(size) })}>New array</button>
-            </>
-          ) : (
-            <>
-              <label>
-                Layout
-                <select
-                  value={input.layout}
-                  onChange={(e) => {
-                    const layout = e.target.value as LayoutId;
-                    onLayout(layout);
-                    setInput({ kind: "graph", layout, graph: buildGraph(layout), start: 0 });
-                  }}
-                >
-                  {GRAPH_LAYOUTS.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {input.layout === "random" && (
-                <button onClick={() => setInput({ ...input, graph: buildGraph("random"), start: 0 })}>New graph</button>
-              )}
-              {algo.kind === "graph" && algo.weighted && (
-                <button onClick={() => setInput({ ...input, graph: withRandomWeights(input.graph) })}>Random weights</button>
-              )}
-              <span className="hint">Click a node to start there.</span>
-            </>
-          )}
+          <Controls algo={algo} input={input} setInput={setInput} onLayout={onLayout} />
         </div>
 
         <div className="canvas">
-          {input.kind === "sorting" ? (
-            <ArrayView frame={frame as ArrayFrame} max={100} />
-          ) : (
-            <GraphView
-              graph={input.graph}
-              frame={frame as GraphFrame}
-              start={input.start}
-              weighted={algo.kind === "graph" && algo.weighted}
-              onPickStart={(start) => setInput({ ...input, start })}
-            />
-          )}
+          <Canvas algo={algo} input={input} frame={frame} setInput={setInput} />
         </div>
 
-        <Legend kind={algo.kind} />
+        <Legend legend={legend} />
 
         <div className="controls">
           <div className="buttons">
@@ -189,11 +122,7 @@ function Player({ algo, lang, onLang, onLayout, input, setInput, size, setSize, 
                   {k} = <b>{v}</b>
                 </span>
               ))}
-            {"aux" in frame && (
-              <span className="aux">
-                {frame.aux.title}: <b>[{frame.aux.items.join(", ")}]</b>
-              </span>
-            )}
+            {Status && <Status frame={frame} />}
           </div>
         </div>
       </section>
@@ -204,26 +133,10 @@ function Player({ algo, lang, onLang, onLayout, input, setInput, size, setSize, 
   );
 }
 
-const LEGENDS = {
-  sorting: [
-    ["compare", "Comparing"],
-    ["swap", "Moved"],
-    ["pivot", "Pivot"],
-    ["active", "Active"],
-    ["sorted", "Final position"],
-  ],
-  graph: [
-    ["current", "Current"],
-    ["frontier", "Discovered"],
-    ["visited", "Done"],
-    ["tree", "Tree edge"],
-  ],
-} as const;
-
-function Legend({ kind }: { kind: Algorithm["kind"] }) {
+function Legend({ legend }: { legend: View["legend"] }) {
   return (
     <ul className="legend">
-      {LEGENDS[kind].map(([mark, label]) => (
+      {legend.map(([mark, label]) => (
         <li key={mark}>
           <i data-mark={mark} /> {label}
         </li>
