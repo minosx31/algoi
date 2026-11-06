@@ -476,7 +476,7 @@ main {
 .string-view .cell[data-prefix] {
   background: var(--dim);
 }
-.string-view .text .cell[data-found] {
+.string-view .text .cell[data-found]:not([data-mark]) {
   color: var(--sorted);
   font-weight: var(--weight-bold);
   box-shadow:
