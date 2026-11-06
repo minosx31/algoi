@@ -2,6 +2,7 @@ import { chromium } from "playwright";
 import { spawn } from "node:child_process";
 import { ALGORITHMS } from "../src/algorithms";
 import { LANGUAGES } from "../src/core/types";
+import { viewOf } from "../src/core/views";
 
 const PORT = 4179;
 const shots = process.argv[2] ?? "screenshots";
@@ -56,13 +57,9 @@ try {
     await page.getByRole("button", { name: "Last step" }).click();
     const [cur, total] = (await counter.textContent())!.split("/").map((s) => s.trim());
     assert(cur === total, `${algo.id}: seek to last frame (${total} frames)`);
-    if (algo.kind === "sorting") {
-      const sorted = await page.locator('.bar[data-mark="sorted"]').count();
-      assert(sorted === (await page.locator(".bar").count()), `${algo.id}: every bar ends sorted`);
-    } else {
-      const visited = await page.locator('.node[data-mark="visited"]').count();
-      assert(visited === (await page.locator(".node").count()), `${algo.id}: every node ends visited`);
-    }
+    const end = viewOf(algo).endState;
+    const items = await page.locator(end.all).count();
+    assert(items > 0 && items === (await page.locator(end.done).count()), `${algo.id}: ${end.label}`);
     await page.screenshot({ path: `${shots}/${algo.id}-end.png` });
   }
 

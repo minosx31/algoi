@@ -5,6 +5,7 @@ export const mergeSort: SortingAlgorithm = {
   id: "merge-sort",
   name: "Merge Sort",
   kind: "sorting",
+  topic: "sorting",
   about: {
     summary: "Splits the array in half, sorts each half recursively, then merges the two sorted halves by repeatedly taking the smaller front value.",
     invariants: [

@@ -5,6 +5,7 @@ export const quickSort: SortingAlgorithm = {
   id: "quick-sort",
   name: "Quick Sort",
   kind: "sorting",
+  topic: "sorting",
   about: {
     summary: "Picks a pivot, partitions the range so smaller values sit left of it and the rest sit right, then sorts each side the same way.",
     invariants: [

@@ -5,6 +5,7 @@ export const bubbleSort: SortingAlgorithm = {
   id: "bubble-sort",
   name: "Bubble Sort",
   kind: "sorting",
+  topic: "sorting",
   about: {
     summary: "Sweeps the array repeatedly, swapping adjacent out-of-order pairs, so the largest remaining value bubbles to the end on each pass.",
     invariants: [

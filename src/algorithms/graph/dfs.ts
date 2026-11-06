@@ -5,6 +5,7 @@ export const dfs: GraphAlgorithm = {
   id: "dfs",
   name: "Depth-First Search",
   kind: "graph",
+  topic: "graph",
   weighted: false,
   about: {
     summary: "Goes as deep as possible along one path before backing up, exploring each node once.",

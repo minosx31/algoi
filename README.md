@@ -10,6 +10,7 @@ bun install
 bun run dev      # http://localhost:5173
 bun run test     # trace correctness + every language has every traced line
 bun run verify   # builds, then drives every algorithm in headless Chromium
+bun run bench    # frame count and median run time per algorithm, as JSON lines
 ```
 
 `verify` needs a Playwright browser once: `bunx playwright install chromium-headless-shell`.
@@ -23,10 +24,10 @@ Code listings are plain strings per language. A line ending in `@@label` is tagg
 ## Adding an algorithm
 
 1. Copy the closest existing file (`src/algorithms/sorting/bubble.ts` or `src/algorithms/graph/bfs.ts`).
-2. Fill in `about` (a one-sentence summary, invariants, use cases) and `complexity` (best, average, worst, space). Every algorithm's page shows these in the same fixed order.
+2. Set `topic` (the sidebar group, a key of `TOPIC_LABELS` in `src/core/types.ts`). Fill in `about` (a one-sentence summary, invariants, use cases) and `complexity` (best, average, worst, space). Every algorithm's page shows these in the same fixed order.
 3. Write the five listings, tagging lines with `@@label`.
 4. Drive the tracer in `run`, calling `t.step(label, note, ...)`.
 5. Append it to `ALGORITHMS` in `src/algorithms/index.ts`.
 6. `bun run test` fails if any traced label is missing from any language, a section of `about` is empty, or the result is wrong on any input (graph algorithms run on every layout in `src/core/inputs.ts`).
 
-A new kind of visual (trees, DP tables, grids) means a new frame type in `src/core/types.ts`, a variant in the `Algorithm` union, and a view component next to `ArrayView` and `GraphView`. A new language means one entry in `LANGUAGES` plus a listing in every algorithm; the test enforces the second part.
+A new kind of visual (trees, DP tables, grids) means a new frame type in `src/core/types.ts`, a variant in the `Algorithm` union, a view component next to `ArrayView` and `GraphView`, and one row in `VIEWS` (`src/core/views.tsx`). The row holds the input generator, the `run` adapter, the canvas, the input controls, the legend, and the end state `bun run verify` asserts. A topic and a kind are separate: a topic groups the sidebar, a kind picks the frame shape and view. A new language means one entry in `LANGUAGES` plus a listing in every algorithm; the test enforces the second part.

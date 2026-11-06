@@ -5,6 +5,7 @@ export const selectionSort: SortingAlgorithm = {
   id: "selection-sort",
   name: "Selection Sort",
   kind: "sorting",
+  topic: "sorting",
   about: {
     summary: "Repeatedly finds the smallest value in the unsorted part and swaps it into the next slot.",
     invariants: [

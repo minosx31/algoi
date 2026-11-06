@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import { ALGORITHMS, findAlgorithm } from "./algorithms";
-import { LANGUAGES, type Category, type LangId } from "./core/types";
+import { LANGUAGES, TOPIC_LABELS, type LangId, type Topic } from "./core/types";
 import { Visualizer } from "./components/Visualizer";
 import type { LayoutId } from "./core/inputs";
-
-const CATEGORY_LABELS: Record<Category, string> = { sorting: "Sorting", graph: "Graph" };
 
 const routeId = () => window.location.hash.replace(/^#\/?/, "");
 
@@ -39,7 +37,7 @@ export function App() {
     }
   };
 
-  const categories = Object.keys(CATEGORY_LABELS) as Category[];
+  const topics = Object.keys(TOPIC_LABELS) as Topic[];
 
   return (
     <div className="app">
@@ -54,9 +52,9 @@ export function App() {
           value={algo.id}
           onChange={(e) => (window.location.hash = `#/${e.target.value}`)}
         >
-          {categories.map((cat) => (
-            <optgroup key={cat} label={CATEGORY_LABELS[cat]}>
-              {ALGORITHMS.filter((a) => a.kind === cat).map((a) => (
+          {topics.map((topic) => (
+            <optgroup key={topic} label={TOPIC_LABELS[topic]}>
+              {ALGORITHMS.filter((a) => a.topic === topic).map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}
                 </option>
@@ -64,11 +62,11 @@ export function App() {
             </optgroup>
           ))}
         </select>
-        {categories.map((cat) => (
-          <div key={cat} className="group">
-            <h2>{CATEGORY_LABELS[cat]}</h2>
+        {topics.map((topic) => (
+          <div key={topic} className="group">
+            <h2>{TOPIC_LABELS[topic]}</h2>
             <ul>
-              {ALGORITHMS.filter((a) => a.kind === cat).map((a) => (
+              {ALGORITHMS.filter((a) => a.topic === topic).map((a) => (
                 <li key={a.id}>
                   <a href={`#/${a.id}`} aria-current={a.id === algo.id ? "page" : undefined}>
                     {a.name}

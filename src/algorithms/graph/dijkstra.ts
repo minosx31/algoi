@@ -5,6 +5,7 @@ export const dijkstra: GraphAlgorithm = {
   id: "dijkstra",
   name: "Dijkstra's Algorithm",
   kind: "graph",
+  topic: "graph",
   weighted: true,
   about: {
     summary: "Repeatedly settles the closest unsettled node, then relaxes its edges to see if they offer a shorter route.",

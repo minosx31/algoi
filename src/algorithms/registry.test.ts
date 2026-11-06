@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { ALGORITHMS } from "./index";
 import { labelsOf } from "../core/code";
 import { GRAPH_LAYOUTS, buildGraph, randomArray, withRandomWeights } from "../core/inputs";
-import { LANGUAGES, type Graph } from "../core/types";
+import { LANGUAGES, TOPIC_LABELS, type Graph } from "../core/types";
+import { VIEWS } from "../core/views";
 
 function framesOf(algo: (typeof ALGORITHMS)[number]) {
   return algo.kind === "sorting" ? algo.run(randomArray(12)) : algo.run(withRandomWeights(buildGraph("mesh")), 0);
@@ -50,6 +51,15 @@ test("every algorithm documents summary, invariants, complexity, and use cases",
     expect(a.about.useCases.length).toBeGreaterThan(0);
     for (const v of Object.values(a.complexity)) expect(v).toMatch(/^O\(/);
   }
+});
+
+test("every algorithm has a topic with a label, and every topic has an algorithm", () => {
+  for (const a of ALGORITHMS) expect(TOPIC_LABELS[a.topic]).toBeTruthy();
+  for (const topic of Object.keys(TOPIC_LABELS)) expect(ALGORITHMS.some((a) => a.topic === topic)).toBe(true);
+});
+
+test("every kind has a VIEWS row", () => {
+  for (const a of ALGORITHMS) expect(VIEWS[a.kind]).toBeDefined();
 });
 
 test("algorithm ids are unique", () => {
