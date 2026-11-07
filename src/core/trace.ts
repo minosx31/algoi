@@ -1,4 +1,4 @@
-import type { ArrayFrame, ArrayItem, BarMark, Graph, GraphFrame, Vars } from "./types";
+import type { ArrayFrame, ArrayItem, BarMark, Graph, GraphFrame, OpsFrame, OpsRow, Vars } from "./types";
 import { edgeKey } from "./types";
 
 /** Records full-snapshot frames while a sorting algorithm mutates `items`. */
@@ -75,5 +75,26 @@ export class GraphTracer {
       if (edges[k] !== "tree") edges[k] = "considered";
     }
     this.frames.push({ line, note, vars: extra.vars, nodes, edges, labels: { ...this.labels }, aux: { title: aux.title, items: aux.items.slice() } });
+  }
+}
+
+/** Records frames for a script of operations. The algorithm builds fresh rows for every step. */
+export class OpsTracer {
+  readonly frames: OpsFrame[] = [];
+  readonly results: string[] = [];
+  readonly ops: readonly string[];
+  at = 0;
+
+  constructor(ops: readonly string[]) {
+    this.ops = ops;
+  }
+
+  answer(result: string) {
+    this.results[this.at] = result;
+  }
+
+  step(line: string, note: string, rows: OpsRow[], vars?: Vars) {
+    const log = this.ops.map((op, i) => ({ op, result: this.results[i] }));
+    this.frames.push({ line, note, vars, rows, at: this.at, log });
   }
 }
