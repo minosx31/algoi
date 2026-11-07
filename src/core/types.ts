@@ -51,6 +51,9 @@ export type ScanMark = "compare" | "active" | "pivot" | "swap" | "found" | "mute
 /** A highlighted rectangle over items `from..to`, between values `low` and `high` (the full plot height when omitted). */
 export type ScanBand = { from: number; to: number; low?: number; high?: number };
 
+/** A band swatch is not a bar mark, so the legend names it separately. */
+export type ScanLegendMark = ScanMark | "band";
+
 export type ScanAnswer = number | number[];
 
 export type ScanFrame = FrameBase & {
@@ -103,6 +106,10 @@ export type ScanAlgorithm = AlgorithmBase & {
   kind: "scan";
   /** Pointer names in chip-row order, top to bottom. */
   pointers: readonly string[];
+  /** One entry per mark or band this algorithm draws, and no others. */
+  legend: readonly (readonly [mark: ScanLegendMark, label: string])[];
+  /** Heading for the per-index label row. Set exactly when the algorithm writes labels. */
+  labelTitle?: string;
   makeInput: (size: number) => ScanInput;
   run: (input: ScanInput) => ScanFrame[];
   /** A direct computation of the answer, used as the test oracle. */

@@ -115,7 +115,7 @@ const scan: ViewRow<"scan", ScanInput> = {
   makeInput: (algo) => algo.makeInput(SCAN_SIZE.initial),
   largestInput: (algo) => algo.makeInput(SCAN_SIZE.max),
   run: (algo, input) => algo.run(input),
-  Canvas: ({ algo, frame }) => <ScanView frame={frame} pointers={algo.pointers} />,
+  Canvas: ({ algo, frame }) => <ScanView algo={algo} frame={frame} />,
   Controls: ({ algo, input, setInput }) => (
     <>
       <label>
@@ -131,15 +131,7 @@ const scan: ViewRow<"scan", ScanInput> = {
       <button onClick={() => setInput(algo.makeInput(input.values.length))}>New input</button>
     </>
   ),
-  legend: [
-    ["compare", "Current"],
-    ["active", "In range"],
-    ["pivot", "On stack or deque"],
-    ["swap", "Popped"],
-    ["found", "Answer"],
-    ["muted", "Ruled out"],
-    ["band", "Window"],
-  ],
+  legend: [],
   endState: { all: ".scan-view", done: ".scan-view .answer", label: "the answer shows at the last step" },
 };
 

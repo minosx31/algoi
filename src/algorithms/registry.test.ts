@@ -106,6 +106,13 @@ test("every kind has a VIEWS row", () => {
   for (const a of ALGORITHMS) expect(VIEWS[a.kind]).toBeDefined();
 });
 
+test("kadane does not claim a zero sum would lower the next run", () => {
+  const kadane = ALGORITHMS.find((a) => a.id === "kadane")!;
+  if (kadane.kind !== "scan") throw new Error("kadane is a scan algorithm");
+  const restarts = kadane.run({ values: [2, -2, 0, 4] }).filter((f) => f.line === "restart");
+  expect(restarts.map((f) => f.note)).toEqual(["cur = 0 adds nothing to the next value, so start a new run at A[2]: cur = 0.", "cur = 0 adds nothing to the next value, so start a new run at A[3]: cur = 4."]);
+});
+
 test("algorithm ids are unique", () => {
   expect(new Set(ids).size).toBe(ids.length);
 });
@@ -154,6 +161,15 @@ describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
             expect(algo.pointers).toContain(name);
             expect(at! >= 0 && at! < input.values.length).toBe(true);
           }
+    });
+
+    test("legend names exactly the marks and bands its frames draw, and the label heading exists exactly when labels do", () => {
+      const frames = inputs.flatMap((input) => algo.run(input));
+      const drawn = new Set<string>(frames.flatMap((f) => Object.values(f.marks)));
+      if (frames.some((f) => f.bands.length)) drawn.add("band");
+      expect(algo.legend.map(([mark]) => mark).sort()).toEqual([...drawn].sort());
+      for (const [, label] of algo.legend) expect(label.length).toBeGreaterThan(0);
+      expect(!!algo.labelTitle).toBe(frames.some((f) => Object.keys(f.labels).length > 0));
     });
 
     test("tags every line any seeded input traces, in every language", () => {

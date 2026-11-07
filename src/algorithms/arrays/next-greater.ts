@@ -8,6 +8,12 @@ export const nextGreater: ScanAlgorithm = {
   kind: "scan",
   topic: "arrays",
   pointers: ["i"],
+  legend: [
+    ["compare", "Current"],
+    ["pivot", "Waiting on the stack"],
+    ["swap", "Popped"],
+  ],
+  labelTitle: "next greater value per index",
   about: {
     summary: "Finds, for every value, the first larger value to its right by scanning once with a stack of indices still waiting for an answer; each new value answers every smaller value on top of the stack.",
     invariants: [

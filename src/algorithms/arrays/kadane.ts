@@ -8,6 +8,12 @@ export const kadane: ScanAlgorithm = {
   kind: "scan",
   topic: "arrays",
   pointers: ["i"],
+  legend: [
+    ["compare", "Current value"],
+    ["band", "Current run"],
+    ["found", "Best run so far"],
+  ],
+  labelTitle: "cur: best sum ending at each index",
   about: {
     summary: "Finds the largest sum of a contiguous subarray in one pass by keeping the best sum that ends at the current index, and dropping a running sum that is zero or negative because it can only lower what follows.",
     invariants: [
@@ -135,7 +141,8 @@ function maxSubarray(a) {
         cur = values[i];
         start = i;
         t.labels[i] = String(cur);
-        t.step("restart", `cur = ${prev} would only lower the sum, so start a new run at A[${i}]: cur = ${cur}.`, view(i, { [i]: "compare" }));
+        const why = prev === 0 ? `cur = 0 adds nothing to the next value` : `cur = ${prev} would only lower the sum`;
+        t.step("restart", `${why}, so start a new run at A[${i}]: cur = ${cur}.`, view(i, { [i]: "compare" }));
       }
       if (cur > best) {
         best = cur;

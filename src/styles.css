@@ -423,6 +423,7 @@ main {
   --bar-color: var(--sorted);
 }
 .canvas:has(.scan-view) {
+  height: 420px;
   padding: var(--space-3);
 }
 .scan-view {
@@ -432,26 +433,27 @@ main {
 }
 .scan-strip {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-1) var(--space-3);
   min-height: 28px;
   font-size: var(--text-sm);
   color: var(--text-secondary);
 }
 .aux-list {
   display: flex;
-  flex-shrink: 0;
-  align-items: center;
+  align-items: baseline;
   gap: var(--space-2);
-  max-width: 60%;
+  min-width: 0;
 }
 .aux-list ol {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-1);
+  min-width: 0;
   margin: 0;
   padding: 0;
   list-style: none;
-  overflow: hidden;
 }
 .aux-list li {
   padding: 0 var(--space-1);
@@ -499,6 +501,9 @@ main {
 .scan-view .bar {
   min-height: 2px;
 }
+.scan-view .bar[data-sign="zero"] {
+  margin-top: -1px;
+}
 .scan-view .bar[data-sign="neg"] {
   align-items: flex-end;
 }
@@ -508,13 +513,17 @@ main {
 .scan-view .bar[data-sign="neg"] span {
   margin: 0 0 -20px;
 }
+.scan-caption {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
 .scan-labels {
   position: relative;
-  height: 18px;
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: var(--text-xs);
+  line-height: 16px;
   font-weight: var(--weight-bold);
   font-variant-numeric: tabular-nums;
   color: var(--action);
@@ -522,10 +531,10 @@ main {
 .scan-labels li {
   position: absolute;
   transform: translateX(-50%);
+  white-space: nowrap;
 }
-.scan-view[data-density="medium"] .bar span,
-.scan-view[data-density="medium"] .scan-labels {
-  font-size: 10px;
+.scan-view .legend {
+  margin-top: var(--space-2);
 }
 .pointer-row {
   position: relative;
@@ -563,6 +572,9 @@ main {
   list-style: none;
   font-size: var(--text-xs);
   color: var(--text-secondary);
+}
+.legend:empty {
+  display: none;
 }
 .legend li {
   display: flex;
@@ -889,11 +901,7 @@ main {
     aspect-ratio: 640 / 440;
   }
   .canvas:has(.scan-view) {
-    height: 320px;
-  }
-  .scan-view[data-density="medium"] .bar span,
-  .scan-view[data-density="medium"] .scan-labels li {
-    display: none;
+    height: 400px;
   }
   .node circle {
     r: 30px;

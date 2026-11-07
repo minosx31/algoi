@@ -13,6 +13,12 @@ export const twoSumSorted: ScanAlgorithm = {
   kind: "scan",
   topic: "arrays",
   pointers: ["i", "j"],
+  legend: [
+    ["active", "In range"],
+    ["compare", "i and j"],
+    ["found", "Pair found"],
+    ["muted", "Ruled out"],
+  ],
   about: {
     summary: "Finds two values in a sorted array that add up to a target by starting a pointer at each end and moving the one whose value cannot be part of any remaining pair.",
     invariants: [

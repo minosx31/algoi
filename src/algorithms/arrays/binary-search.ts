@@ -7,6 +7,12 @@ export const binarySearch: ScanAlgorithm = {
   kind: "scan",
   topic: "arrays",
   pointers: ["lo", "mid", "hi"],
+  legend: [
+    ["active", "In range"],
+    ["compare", "Middle probe"],
+    ["found", "Target found"],
+    ["muted", "Ruled out"],
+  ],
   about: {
     summary: "Finds a value in a sorted array by probing the middle of the remaining range and discarding the half that cannot hold it.",
     invariants: [

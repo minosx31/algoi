@@ -8,6 +8,14 @@ export const slidingWindowMax: ScanAlgorithm = {
   kind: "scan",
   topic: "arrays",
   pointers: ["i"],
+  legend: [
+    ["compare", "Current"],
+    ["pivot", "In the deque"],
+    ["swap", "Dropped"],
+    ["found", "Window maximum"],
+    ["band", "Window"],
+  ],
+  labelTitle: "window max at each index",
   about: {
     summary: "Reports the maximum of every window of k consecutive values by keeping a deque of indices whose values decrease from front to back, so the front is always the current maximum.",
     invariants: [
