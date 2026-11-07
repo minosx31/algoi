@@ -7,6 +7,9 @@ import { quickSort } from "./sorting/quick";
 import { bfs } from "./graph/bfs";
 import { dfs } from "./graph/dfs";
 import { dijkstra } from "./graph/dijkstra";
+import { bst } from "./trees/bst";
+import { treeTraversals } from "./trees/traversals";
+import { binaryHeap } from "./trees/binary-heap";
 
 /** Every algorithm the app knows about. Add a new one by appending it here. */
 export const ALGORITHMS: Algorithm[] = [
@@ -18,6 +21,9 @@ export const ALGORITHMS: Algorithm[] = [
   bfs,
   dfs,
   dijkstra,
+  bst,
+  treeTraversals,
+  binaryHeap,
 ];
 
 export const findAlgorithm = (id: string) => ALGORITHMS.find((a) => a.id === id);

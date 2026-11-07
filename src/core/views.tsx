@@ -1,7 +1,8 @@
 import type { ComponentType } from "react";
 import { ArrayView } from "../components/ArrayView";
 import { GraphView } from "../components/GraphView";
-import { GRAPH_LAYOUTS, buildGraph, randomArray, withRandomWeights, type LayoutId } from "./inputs";
+import { TreeView } from "../components/TreeView";
+import { GRAPH_LAYOUTS, buildGraph, randomArray, randomKeys, withRandomWeights, type LayoutId } from "./inputs";
 import type { Algorithm, Graph } from "./types";
 
 type Kind = Algorithm["kind"];
@@ -108,7 +109,49 @@ const graph: ViewRow<"graph", GraphInput> = {
   endState: { all: ".node", done: '.node[data-mark="visited"]', label: "every node ends visited" },
 };
 
-export const VIEWS = { sorting, graph } satisfies { [K in Kind]: ViewRow<K, any> };
+const TREE_SIZE = { initial: 9, min: 3, max: 15 };
+
+type TreeInput = { keys: number[] };
+
+const tree: ViewRow<"tree", TreeInput> = {
+  makeInput: () => ({ keys: randomKeys(TREE_SIZE.initial) }),
+  largestInput: () => ({ keys: randomKeys(TREE_SIZE.max) }),
+  run: (algo, { keys }) => algo.run(keys),
+  Canvas: ({ frame }) => <TreeView frame={frame} />,
+  Controls: ({ input, setInput }) => (
+    <>
+      <label>
+        Size <strong>{input.keys.length}</strong>
+        <input
+          type="range"
+          min={TREE_SIZE.min}
+          max={TREE_SIZE.max}
+          value={input.keys.length}
+          onChange={(e) => setInput({ keys: randomKeys(+e.target.value) })}
+        />
+      </label>
+      <button onClick={() => setInput({ keys: randomKeys(input.keys.length) })}>New keys</button>
+    </>
+  ),
+  Status: ({ frame }) => (
+    <>
+      <span className="aux">
+        {frame.aux.title}: <b>[{frame.aux.items.join(", ")}]</b>
+      </span>
+      {frame.answer && <span className="aux answer">{frame.answer}</span>}
+    </>
+  ),
+  legend: [
+    ["compare", "Comparing"],
+    ["path", "Path from the root"],
+    ["swap", "Moved or replaced"],
+    ["target", "Target"],
+    ["done", "Done"],
+  ],
+  endState: { all: ".tree-node", done: '.workspace:has(.answer) .tree-node[data-mark="done"]', label: "every node ends done and the answer shows" },
+};
+
+export const VIEWS = { sorting, graph, tree } satisfies { [K in Kind]: ViewRow<K, any> };
 
 export type Input = ReturnType<(typeof VIEWS)[Kind]["makeInput"]>;
 export type Frame = FrameOf<Kind>;

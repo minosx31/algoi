@@ -1,9 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { ALGORITHMS } from "./index";
 import { labelsOf } from "../core/code";
-import { GRAPH_LAYOUTS, buildGraph, randomArray, withRandomWeights } from "../core/inputs";
-import { LANGUAGES, TOPIC_LABELS, type Graph } from "../core/types";
+import { GRAPH_LAYOUTS, buildGraph, randomArray, randomKeys, withRandomWeights } from "../core/inputs";
+import { LANGUAGES, TOPIC_LABELS, type Graph, type TreeFrame } from "../core/types";
 import { VIEWS, viewOf } from "../core/views";
+import { MIN_NODE_DISTANCE, layoutTree } from "../components/TreeView";
 
 function framesOf(algo: (typeof ALGORITHMS)[number]) {
   if (algo.kind === "sorting") return algo.run(randomArray(12));
@@ -34,6 +35,48 @@ function shortestWeighted(g: Graph, s: number) {
     }
   return d;
 }
+
+function inorder(f: TreeFrame) {
+  const byId = new Map(f.nodes.map((n) => [n.id, n]));
+  const out: number[] = [];
+  const walk = (id: number | null) => {
+    if (id === null) return;
+    const n = byId.get(id)!;
+    walk(n.children[0]);
+    out.push(n.value as number);
+    walk(n.children[1]);
+  };
+  f.roots.forEach(walk);
+  return out;
+}
+
+function referenceOrders(keys: number[]) {
+  const left = new Map<number, number>();
+  const right = new Map<number, number>();
+  for (const k of keys.slice(1)) {
+    let p = keys[0];
+    while ((k < p ? left : right).has(p)) p = (k < p ? left : right).get(p)!;
+    (k < p ? left : right).set(p, k);
+  }
+  const orders: Record<string, number[]> = { Preorder: [], Inorder: [], Postorder: [], "Level-order": [] };
+  const dfs = (k: number | undefined) => {
+    if (k === undefined) return;
+    orders.Preorder.push(k);
+    dfs(left.get(k));
+    orders.Inorder.push(k);
+    dfs(right.get(k));
+    orders.Postorder.push(k);
+  };
+  dfs(keys[0]);
+  for (const queue = [keys[0]]; queue.length > 0; ) {
+    const k = queue.shift()!;
+    orders["Level-order"].push(k);
+    for (const c of [left.get(k), right.get(k)]) if (c !== undefined) queue.push(c);
+  }
+  return orders;
+}
+
+const TREE_SIZES = [3, 4, 5, 9, 15];
 
 const ids = ALGORITHMS.map((a) => a.id);
 
@@ -108,5 +151,96 @@ describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
         }
       }
     });
+  } else if (algo.kind === "tree") {
+    test("every frame is one well-formed tree drawn without overlaps, and the last marks every node done with an answer", () => {
+      for (const n of TREE_SIZES)
+        for (let seed = 0; seed < 20; seed++) {
+          const frames = algo.run(randomKeys(n));
+          for (const f of frames) {
+            const byId = new Map(f.nodes.map((node) => [node.id, node]));
+            expect(byId.size).toBe(f.nodes.length);
+            const seen: number[] = [];
+            const walk = (id: number | null) => {
+              if (id === null) return;
+              seen.push(id);
+              byId.get(id)!.children.forEach(walk);
+            };
+            f.roots.forEach(walk);
+            expect(seen.sort((a, b) => a - b)).toEqual([...byId.keys()].sort((a, b) => a - b));
+            for (const id of f.array ?? []) expect(byId.has(id)).toBe(true);
+            const pos = [...layoutTree(f).values()];
+            for (let i = 0; i < pos.length; i++)
+              for (let j = i + 1; j < pos.length; j++)
+                expect(Math.hypot(pos[i].x - pos[j].x, pos[i].y - pos[j].y)).toBeGreaterThanOrEqual(MIN_NODE_DISTANCE);
+          }
+          const last = frames[frames.length - 1];
+          expect(last.nodes.length).toBeGreaterThan(0);
+          for (const node of last.nodes) expect(node.mark).toBe("done");
+          expect(last.answer).toBeTruthy();
+        }
+    });
+
+    if (algo.id === "bst")
+      test("keeps the BST order every frame, marks the successor before replacing, and keeps the right keys", () => {
+        for (const n of TREE_SIZES)
+          for (let seed = 0; seed < 20; seed++) {
+            const keys = randomKeys(n);
+            const frames = algo.run(keys);
+            for (const f of frames) {
+              const order = inorder(f);
+              for (let i = 1; i < order.length; i++) expect(order[i - 1]).toBeLessThanOrEqual(order[i]);
+            }
+            const replace = frames.findIndex((f) => f.line === "del-replace");
+            expect(replace).toBeGreaterThan(0);
+            const before = frames[replace - 1];
+            expect(before.line).toBe("del-successor");
+            const successor = before.nodes.find((node) => node.mark === "target")!;
+            expect(frames[replace].nodes.find((node) => node.mark === "swap")!.value).toBe(successor.value);
+            expect(frames.some((f) => f.line === "del-splice")).toBe(true);
+            const found = frames.filter((f) => f.line === "find-done").map((f) => f.nodes.find((node) => node.mark === "target")?.value);
+            expect(found).toEqual([keys[n - 1], undefined]);
+            const kept = keys.filter((k) => k !== keys[0] && k !== keys[n - 1]).sort((a, b) => a - b);
+            expect(inorder(frames[frames.length - 1])).toEqual(kept);
+          }
+      });
+
+    if (algo.id === "binary-heap")
+      test("only the key being sifted breaks the heap property, the array is the tree in level order, and pop-min returns the smallest keys", () => {
+        for (const n of TREE_SIZES)
+          for (let seed = 0; seed < 20; seed++) {
+            const keys = randomKeys(n);
+            const frames = algo.run(keys);
+            for (const f of frames) {
+              const byId = new Map(f.nodes.map((node) => [node.id, node]));
+              const array = f.array!;
+              expect(f.roots).toEqual(array.length ? [array[0]] : []);
+              const broken: number[][] = [];
+              array.forEach((id, i) => {
+                expect(byId.get(id)!.children).toEqual([array[2 * i + 1] ?? null, array[2 * i + 2] ?? null]);
+                if (i > 0 && byId.get(array[(i - 1) >> 1])!.value > byId.get(id)!.value) broken.push([array[(i - 1) >> 1], id]);
+              });
+              if (broken.length > 0) expect(broken.every(([p, c]) => [p, c].some((x) => broken.every((edge) => edge.includes(x))))).toBe(true);
+            }
+            const pops = Math.max(1, Math.floor(n / 3));
+            const sorted = [...keys].sort((a, b) => a - b);
+            const last = frames[frames.length - 1];
+            expect(last.nodes.map((node) => node.value).sort((a, b) => (a as number) - (b as number))).toEqual(sorted.slice(pops));
+            expect(last.answer).toContain(sorted.slice(0, pops).join(", "));
+          }
+      });
+
+    if (algo.id === "tree-traversals")
+      test("each traversal outputs the reference order, and the last output holds every node once", () => {
+        for (const n of TREE_SIZES)
+          for (let seed = 0; seed < 20; seed++) {
+            const keys = randomKeys(n);
+            const frames = algo.run(keys);
+            for (const [name, want] of Object.entries(referenceOrders(keys))) {
+              const outputs = frames.filter((f) => f.aux.title === `${name} output`);
+              expect(outputs[outputs.length - 1].aux.items.map(Number)).toEqual(want);
+            }
+            expect(frames[frames.length - 1].aux.items.map(Number).sort((a, b) => a - b)).toEqual([...keys].sort((a, b) => a - b));
+          }
+      });
   }
 });
