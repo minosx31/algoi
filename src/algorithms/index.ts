@@ -13,6 +13,9 @@ import { editDistance } from "./dp/edit-distance";
 import { knapsack } from "./dp/knapsack";
 import { coinChange } from "./dp/coin-change";
 import { lis } from "./dp/lis";
+import { nQueens } from "./backtracking/n-queens";
+import { sudoku } from "./backtracking/sudoku";
+import { wordSearch } from "./backtracking/word-search";
 
 /** Every algorithm the app knows about. Add a new one by appending it here. */
 export const ALGORITHMS: Algorithm[] = [
@@ -30,6 +33,9 @@ export const ALGORITHMS: Algorithm[] = [
   knapsack,
   coinChange,
   lis,
+  nQueens,
+  sudoku,
+  wordSearch,
 ];
 
 export const findAlgorithm = (id: string) => ALGORITHMS.find((a) => a.id === id);
