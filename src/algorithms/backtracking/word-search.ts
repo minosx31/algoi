@@ -15,6 +15,28 @@ const EXTRA_LETTERS = "AEIRST";
 const found = (word: string) => `Found "${word}"`;
 const missing = (word: string) => `"${word}" is not in the grid`;
 
+function randomInput(length: number): Input {
+  const side = length + 1;
+  const word = WORDS[length][roll(WORDS[length].length)];
+  const grid: string[][] = Array.from({ length: side }, () => Array(side).fill(""));
+  for (;;) {
+    const path: Coord[] = [[roll(side), roll(side)]];
+    while (path.length < length) {
+      const [r, c] = path[path.length - 1];
+      const open = STEPS.map(([dr, dc]): Coord => [r + dr, c + dc]).filter(
+        ([nr, nc]) => inside(side, side, nr, nc) && !path.some(([pr, pc]) => pr === nr && pc === nc),
+      );
+      if (!open.length) break;
+      path.push(open[roll(open.length)]);
+    }
+    if (path.length < length) continue;
+    path.forEach(([r, c], i) => (grid[r][c] = word[i]));
+    break;
+  }
+  const pool = word + EXTRA_LETTERS;
+  return { grid: grid.map((row) => row.map((ch) => ch || pool[roll(pool.length)])), word };
+}
+
 export const wordSearch: GridAlgorithm<Input> = {
   id: "word-search",
   name: "Word Search",
@@ -149,25 +171,10 @@ function wordSearch(grid, word) {
 `,
   },
   makeInput(length) {
-    const side = length + 1;
-    const word = WORDS[length][roll(WORDS[length].length)];
-    const grid: string[][] = Array.from({ length: side }, () => Array(side).fill(""));
     for (;;) {
-      const path: Coord[] = [[roll(side), roll(side)]];
-      while (path.length < length) {
-        const [r, c] = path[path.length - 1];
-        const open = STEPS.map(([dr, dc]): Coord => [r + dr, c + dc]).filter(
-          ([nr, nc]) => inside(side, side, nr, nc) && !path.some(([pr, pc]) => pr === nr && pc === nc),
-        );
-        if (!open.length) break;
-        path.push(open[roll(open.length)]);
-      }
-      if (path.length < length) continue;
-      path.forEach(([r, c], i) => (grid[r][c] = word[i]));
-      break;
+      const input = randomInput(length);
+      if (wordSearch.run(input).some((f) => f.line === "unmark")) return input;
     }
-    const pool = word + EXTRA_LETTERS;
-    return { grid: grid.map((row) => row.map((ch) => ch || pool[roll(pool.length)])), word };
   },
   run({ grid, word }) {
     const rows = grid.length;
