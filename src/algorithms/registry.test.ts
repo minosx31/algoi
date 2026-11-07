@@ -182,6 +182,24 @@ describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
           }
       });
 
+    if (algo.id === "trapping-rain-water")
+      test("marks a bar active only while it is unsettled, and every settled bar muted or just settled", () => {
+        for (const input of inputs)
+          for (const f of algo.run(input)) {
+            const { l, r } = f.pointers as { l: number; r: number };
+            for (let i = 0; i < input.values.length; i++) {
+              if (f.marks[i] === "active") {
+                expect(f.labels[i]).toBeUndefined();
+                expect(f.bands.some((b) => b.from <= i && i <= b.to)).toBe(false);
+                expect(i > l && i < r).toBe(true);
+              } else {
+                expect(["muted", "compare"]).toContain(f.marks[i]!);
+                expect(i <= l || i >= r).toBe(true);
+              }
+            }
+          }
+      });
+
     test("keeps every pointer on a declared name and inside the array", () => {
       for (const input of inputs)
         for (const f of algo.run(input))

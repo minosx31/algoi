@@ -135,7 +135,7 @@ function trap(h) {
     let water = 0;
     const pools: ScanBand[] = [];
     const view = (marks: Record<number, "compare">) => ({
-      marks: t.range(l, r, marks),
+      marks: t.range(l + 1, r - 1, marks),
       pointers: { l, r },
       bands: pools.slice(),
       vars: { l, r, lmax, rmax, water },
@@ -173,7 +173,7 @@ function trap(h) {
       }
     }
     t.answer = water;
-    t.step("done", `The pointers met. ${water} units of water are trapped in total.`, { bands: pools, pointers: { l, r }, vars: { water } });
+    t.step("done", `The pointers met. ${water} units of water are trapped in total.`, { marks: t.range(l + 1, r - 1), bands: pools, pointers: { l, r }, vars: { water } });
     return t.frames;
   },
 };
