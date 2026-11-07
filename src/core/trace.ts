@@ -1,4 +1,4 @@
-import type { ArrayFrame, ArrayItem, BarMark, Graph, GraphFrame, Vars } from "./types";
+import type { ArrayFrame, ArrayItem, BarMark, CellMark, Coord, Graph, GraphFrame, GridCell, GridFrame, Vars } from "./types";
 import { edgeKey } from "./types";
 
 /** Records full-snapshot frames while a sorting algorithm mutates `items`. */
@@ -75,5 +75,40 @@ export class GraphTracer {
       if (edges[k] !== "tree") edges[k] = "considered";
     }
     this.frames.push({ line, note, vars: extra.vars, nodes, edges, labels: { ...this.labels }, aux: { title: aux.title, items: aux.items.slice() } });
+  }
+}
+
+type GridLayout = Pick<GridFrame, "rowHeaders" | "colHeaders" | "box">;
+
+/** Records full-snapshot frames for tables and boards. Every cell starts pending; cells are replaced, never mutated. */
+export class GridTracer {
+  readonly frames: GridFrame[] = [];
+  readonly cells: GridCell[][];
+  readonly layout: GridLayout;
+  aux?: GridFrame["aux"];
+  answer?: string;
+
+  constructor(rows: number, cols: number, layout: GridLayout = {}) {
+    this.cells = Array.from({ length: rows }, () => Array.from({ length: cols }, (): GridCell => ({ text: "", mark: "pending" })));
+    this.layout = layout;
+  }
+
+  set(r: number, c: number, text: string | number, mark?: CellMark) {
+    this.cells[r][c] = { text: String(text), mark };
+  }
+
+  mark(r: number, c: number, mark?: CellMark) {
+    this.cells[r][c] = { text: this.cells[r][c].text, mark };
+  }
+
+  /** Overlays apply for this frame only, in order: marks, then reads, then current. */
+  step(line: string, note: string, extra: { current?: Coord; reads?: Coord[]; marks?: [Coord, CellMark][]; vars?: Vars } = {}) {
+    const cells = this.cells.map((row) => row.slice());
+    const paint = ([r, c]: Coord, mark: CellMark) => (cells[r][c] = { text: cells[r][c].text, mark });
+    for (const [at, mark] of extra.marks ?? []) paint(at, mark);
+    for (const at of extra.reads ?? []) paint(at, "read");
+    if (extra.current) paint(extra.current, "current");
+    const aux = this.aux && { title: this.aux.title, items: this.aux.items.slice() };
+    this.frames.push({ line, note, vars: extra.vars, cells, ...this.layout, aux, answer: this.answer });
   }
 }

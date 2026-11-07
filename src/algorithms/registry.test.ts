@@ -35,6 +35,15 @@ function shortestWeighted(g: Graph, s: number) {
   return d;
 }
 
+function mulberry32(seed: number) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 const ids = ALGORITHMS.map((a) => a.id);
 
 test("every layout is connected and has at most 12 named nodes", () => {
@@ -106,6 +115,29 @@ describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
           const want = shortestWeighted(g, start);
           for (const node of g.nodes) expect(last.labels[node.id]).toBe(String(want[node.id]));
         }
+      }
+    });
+  } else if (algo.kind === "grid") {
+    test("ends on solve's answer with every cell filled, tracing only listed lines, on 200 seeded inputs", () => {
+      const random = Math.random;
+      Math.random = mulberry32(2026);
+      try {
+        const { min, max } = algo.size;
+        const used = new Set<string>();
+        for (let k = 0; k < 200; k++) {
+          const input = algo.makeInput(min + (k % (max - min + 1)));
+          const frames = algo.run(input);
+          const last = frames[frames.length - 1];
+          expect(last.answer).toBe(algo.solve(input));
+          expect(last.cells.flat().filter((c) => c.mark === "pending")).toEqual([]);
+          for (const f of frames) used.add(f.line);
+        }
+        for (const lang of LANGUAGES) {
+          const missing = [...used].filter((l) => !labelsOf(algo.code[lang.id]).has(l));
+          expect({ lang: lang.id, missing }).toEqual({ lang: lang.id, missing: [] });
+        }
+      } finally {
+        Math.random = random;
       }
     });
   }
