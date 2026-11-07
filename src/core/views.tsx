@@ -111,15 +111,15 @@ const graph: ViewRow<"graph", GraphInput> = {
     ["tree", "Tree edge"],
   ],
   endState: (algo) =>
-    algo.stopsAtGoal
-      ? algo.directed
-        ? { all: '.edge[data-mark="tree"]', done: '.edge[data-mark="tree"]', label: "the cycle is drawn" }
-        : {
+    algo.stopsAtCycle
+      ? { all: '.edge[data-mark="tree"]', done: '.node[data-mark="visited"]', label: "the cycle is closed: as many drawn nodes as drawn edges" }
+      : algo.stopsAtGoal
+        ? {
             all: ".node[data-goal]",
             done: 'svg:has(.edge[data-mark="tree"]) .node[data-goal][data-mark="visited"]',
             label: "the goal ends visited with a tree edge drawn",
           }
-      : { all: ".node", done: '.node[data-mark="visited"]', label: "every node ends visited" },
+        : { all: ".node", done: '.node[data-mark="visited"]', label: "every node ends visited" },
 };
 
 export const VIEWS = { sorting, graph } satisfies { [K in Kind]: ViewRow<K, any> };

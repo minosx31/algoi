@@ -194,6 +194,7 @@ const GRAPH_ORACLES: Record<string, Oracle> = {
       expect(cycle.filter((e) => e.v === v).length).toBe(1);
       expect(cycle.some((e) => e.u === v)).toBe(true);
     }
+    expect(g.nodes.filter((n) => last.nodes[n.id] === "visited").length).toBe(cycle.length);
   },
   "tarjan-scc": (g, _, last) => {
     const groups = new Map<string, number[]>();
@@ -287,7 +288,7 @@ describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
         const g = withRandomWeights(buildGraph(layout, algo.directed));
         const frames = algo.run(g, start);
         const last = frames[frames.length - 1];
-        if (!algo.stopsAtGoal) for (const node of g.nodes) expect(last.nodes[node.id]).toBe("visited");
+        if (!algo.stopsAtGoal && !algo.stopsAtCycle) for (const node of g.nodes) expect(last.nodes[node.id]).toBe("visited");
         GRAPH_ORACLES[algo.id]?.(g, start, last);
       }
     });
@@ -325,6 +326,17 @@ describe("directed inputs", () => {
     const last = byId("kahn").run(g, 0).at(-1)!;
     expect(last.aux.items.length).toBeLessThan(g.nodes.length);
     expect(last.note).toContain("cycle");
+  });
+
+  test("parallel edges in one direction add their capacities", () => {
+    const g: Graph = {
+      nodes: ["A", "B"].map((name, id) => ({ id, name, x: id * 100, y: 0 })),
+      edges: [
+        { u: 0, v: 1, w: 2 },
+        { u: 0, v: 1, w: 3 },
+      ],
+    };
+    expect(byId("edmonds-karp").run(g, 0).at(-1)!.vars?.flow).toBe(5);
   });
 
   test("a start that reaches nothing gives zero flow", () => {

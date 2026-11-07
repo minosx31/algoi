@@ -82,6 +82,8 @@ export type GraphAlgorithm = AlgorithmBase & {
   weighted: boolean;
   /** The trace ends when a goal node settles, so nodes it never reached stay idle. */
   stopsAtGoal?: boolean;
+  /** The trace ends when a cycle closes, so nodes outside the cycle are not all finished. */
+  stopsAtCycle?: boolean;
   /** Edges point from `u` to `v`. The input is an acyclic orientation of a layout, plus back edges when "cyclic". */
   directed?: Directed;
   /** The answer does not depend on the start node, so the page neither asks for one nor draws it. */

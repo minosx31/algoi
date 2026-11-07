@@ -97,8 +97,8 @@ std::vector<std::vector<int>> tarjan(const std::vector<std::vector<int>>& adj, i
     java: `
 static int timer;
 static int[] disc, low;
-static Deque<Integer> stack = new ArrayDeque<>();
-static List<List<Integer>> comps = new ArrayList<>();
+static Deque<Integer> stack;
+static List<List<Integer>> comps;
 static void visit(List<List<Integer>> adj, int u) {
     disc[u] = low[u] = timer++;                    @@visit
     stack.push(u);                                 @@visit
@@ -119,6 +119,7 @@ static void visit(List<List<Integer>> adj, int u) {
 }
 
 static List<List<Integer>> tarjan(List<List<Integer>> adj, int s) {
+    timer = 0; stack = new ArrayDeque<>(); comps = new ArrayList<>();   @@init
     disc = new int[adj.size()]; low = new int[adj.size()]; Arrays.fill(disc, -1);   @@init
     visit(adj, s);                                 @@done
     for (int u = 0; u < adj.size(); u++) if (disc[u] < 0) visit(adj, u);   @@done

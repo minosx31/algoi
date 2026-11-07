@@ -16,9 +16,10 @@ export function GraphView({ graph, frame, start, weighted, goal, directed, onPic
   const xs = graph.nodes.map((n) => n.x);
   const ys = graph.nodes.map((n) => n.y);
   const pad = R + 16;
-  const minX = Math.min(...xs) - pad;
+  const padX = directed ? R + 28 : pad;
+  const minX = Math.min(...xs) - padX;
   const minY = Math.min(...ys) - pad;
-  const viewBox = `${minX} ${minY} ${Math.max(...xs) + pad - minX} ${Math.max(...ys) + pad + 20 - minY}`;
+  const viewBox = `${minX} ${minY} ${Math.max(...xs) + padX - minX} ${Math.max(...ys) + pad + 20 - minY}`;
   return (
     <svg className="graph-view" viewBox={viewBox} role="img" aria-label="Graph">
       {graph.edges.map(({ u, v, w }) => {

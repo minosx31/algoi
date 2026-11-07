@@ -9,7 +9,7 @@ export const edmondsKarp: GraphAlgorithm = {
   weighted: true,
   directed: "acyclic",
   about: {
-    summary: "Finds the largest flow from a source to a sink by repeatedly pushing flow along the shortest path that still has spare capacity, found with BFS in the residual graph.",
+    summary: "Finds the largest flow from a source to a sink by repeatedly pushing flow along the shortest path that still has spare capacity, found with BFS in the residual graph. Here the source is the node you click and the sink is the last node in the alphabet that the source can reach.",
     invariants: [
       "Flow on an edge never exceeds its capacity, and every node except the source and sink passes on as much as it takes in.",
       "The residual graph offers spare capacity forward and the chance to cancel flow backward.",
@@ -25,7 +25,9 @@ export const edmondsKarp: GraphAlgorithm = {
   code: {
     pseudo: `
 procedure EdmondsKarp(G, s, t)
-  residual[u][v] ← capacity of edge (u, v), else 0; flow ← 0   @@init
+  residual[u][v] ← 0 for every pair; flow ← 0                 @@init
+  for each edge (u, v) with capacity c do                     @@init
+    residual[u][v] ← residual[u][v] + c                       @@init
   loop
     find a shortest path s → t by BFS over residual > 0        @@search
     if there is no such path then return flow                  @@done
@@ -38,8 +40,10 @@ procedure EdmondsKarp(G, s, t)
     python: `
 from collections import deque
 
-def edmonds_karp(cap, s, t):
-    n, flow = len(cap), 0                          @@init
+def edmonds_karp(n, edges, s, t):
+    cap, flow = [[0] * n for _ in range(n)], 0     @@init
+    for u, v, c in edges:                          @@init
+        cap[u][v] += c                             @@init
     while True:
         parent = [-1] * n; parent[s] = s           @@search
         q = deque([s])                             @@search
@@ -61,8 +65,10 @@ def edmonds_karp(cap, s, t):
         flow += b                                  @@augment
 `,
     cpp: `
-int edmondsKarp(std::vector<std::vector<int>> cap, int s, int t) {
-    int n = cap.size(), flow = 0;                  @@init
+int edmondsKarp(int n, const std::vector<std::array<int, 3>>& edges, int s, int t) {
+    std::vector<std::vector<int>> cap(n, std::vector<int>(n, 0));   @@init
+    for (auto& [u, v, c] : edges) cap[u][v] += c;  @@init
+    int flow = 0;                                  @@init
     while (true) {
         std::vector<int> parent(n, -1); parent[s] = s;   @@search
         std::queue<int> q; q.push(s);              @@search
@@ -83,8 +89,10 @@ int edmondsKarp(std::vector<std::vector<int>> cap, int s, int t) {
 }
 `,
     java: `
-static int edmondsKarp(int[][] cap, int s, int t) {
-    int n = cap.length, flow = 0;                  @@init
+static int edmondsKarp(int n, int[][] edges, int s, int t) {
+    int[][] cap = new int[n][n];                   @@init
+    for (int[] e : edges) cap[e[0]][e[1]] += e[2]; @@init
+    int flow = 0;                                  @@init
     while (true) {
         int[] parent = new int[n];
         Arrays.fill(parent, -1); parent[s] = s;    @@search
@@ -106,8 +114,9 @@ static int edmondsKarp(int[][] cap, int s, int t) {
 }
 `,
     javascript: `
-function edmondsKarp(cap, s, t) {
-  const n = cap.length;
+function edmondsKarp(n, edges, s, t) {
+  const cap = Array.from({ length: n }, () => new Array(n).fill(0));   @@init
+  for (const [u, v, c] of edges) cap[u][v] += c;   @@init
   let flow = 0;                                    @@init
   while (true) {
     const parent = new Array(n).fill(-1); parent[s] = s;   @@search
@@ -133,7 +142,7 @@ function edmondsKarp(cap, s, t) {
     const t = new GraphTracer(graph, true);
     const n = graph.nodes.length;
     const cap = graph.nodes.map(() => graph.nodes.map(() => 0));
-    for (const { u, v, w } of graph.edges) cap[u][v] = w;
+    for (const { u, v, w } of graph.edges) cap[u][v] += w;
     const res = cap.map((row) => row.slice());
     const flowOn = (u: number, v: number) => cap[u][v] - res[u][v];
     const names = (path: number[]) => path.map((i) => t.name(i)).join("→");
@@ -173,7 +182,7 @@ function edmondsKarp(cap, s, t) {
     t.labels[source] = "source";
     if (sink >= 0) t.labels[sink] = "sink";
     show([]);
-    const where = sink >= 0 ? `to the sink ${t.name(sink)}` : "to any other node";
+    const where = sink >= 0 ? `to the sink ${t.name(sink)}, the last node in the alphabet that ${t.name(source)} can reach` : "to any other node";
     t.step("init", `Push flow from the source ${t.name(source)} ${where}. Each edge reads flow/capacity and starts at 0.`, aux(), { vars: { flow: 0 } });
 
     let reachable = new Set<number>([source]);

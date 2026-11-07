@@ -8,7 +8,7 @@ export const cycleDetect: GraphAlgorithm = {
   topic: "graph",
   weighted: false,
   directed: "cyclic",
-  stopsAtGoal: true,
+  stopsAtCycle: true,
   about: {
     summary: "Runs a depth-first search that colours each node white, grey, or black, and reports a cycle the moment an edge points at a grey node.",
     invariants: [
@@ -151,6 +151,7 @@ function hasCycle(adj, start) {
           });
           for (const key of Object.keys(t.edges)) delete t.edges[key];
           loop.slice(1).forEach((to, i) => t.edge(loop[i], to, "tree"));
+          graph.nodes.forEach(({ id }) => (t.nodes[id] = loop.includes(id) ? "visited" : undefined));
           return true;
         }
         const verdict =
