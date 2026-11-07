@@ -1,11 +1,11 @@
-import type { Graph } from "./types";
+import type { Directed, Graph } from "./types";
 
 export function randomArray(n: number, max = 100): number[] {
   return Array.from({ length: n }, () => 5 + Math.floor(Math.random() * (max - 5)));
 }
 
 type Point = [number, number];
-type Shape = { points: Point[]; edges: [number, number][] };
+type Shape = { points: Point[]; edges: [number, number][]; weights?: number[] };
 
 const NAMES = "ABCDEFGHIJKL".split("");
 
@@ -109,18 +109,100 @@ export const GRAPH_LAYOUTS = [
   { id: "random", label: "Random", build: random },
 ] as const;
 
-export type LayoutId = (typeof GRAPH_LAYOUTS)[number]["id"];
-
-export function buildGraph(layout: LayoutId): Graph {
-  const { points, edges } = GRAPH_LAYOUTS.find((l) => l.id === layout)!.build();
+function dag(): Shape {
   return {
-    nodes: points.map(([x, y], id) => ({ id, name: NAMES[id], x, y })),
-    edges: edges.map(([u, v]) => {
-      const [ax, ay] = points[u];
-      const [bx, by] = points[v];
-      return { u, v, w: Math.max(1, Math.round(Math.hypot(ax - bx, ay - by) / 30)) };
-    }),
+    points: [
+      [60, 120], [60, 310],
+      [230, 60], [230, 215], [230, 370],
+      [410, 60], [410, 215], [410, 370],
+      [590, 130], [590, 300],
+    ],
+    edges: [[0, 2], [0, 3], [1, 3], [1, 4], [2, 5], [3, 5], [3, 6], [4, 6], [4, 7], [5, 8], [6, 8], [6, 9], [7, 9]],
   };
+}
+
+/** A flow network with its source (node 0) at the far left and its sink (node 9) at the far right. */
+function flow(): Shape {
+  return {
+    points: [
+      [50, 215],
+      [200, 70], [200, 215], [200, 360],
+      [370, 70], [370, 215], [370, 360],
+      [500, 120], [500, 310],
+      [620, 215],
+    ],
+    edges: [[0, 1], [0, 2], [0, 3], [1, 4], [1, 5], [2, 5], [3, 5], [3, 6], [4, 7], [5, 7], [5, 8], [6, 8], [7, 9], [8, 9]],
+    weights: [10, 8, 10, 4, 6, 5, 4, 6, 4, 5, 6, 6, 9, 9],
+  };
+}
+
+const DIRECTED_LAYOUTS = [
+  { id: "dag", label: "Dependency DAG", build: dag },
+  { id: "flow", label: "Flow network", build: flow },
+] as const;
+
+export type LayoutId = (typeof GRAPH_LAYOUTS)[number]["id"] | (typeof DIRECTED_LAYOUTS)[number]["id"];
+
+/** The layouts a page offers. The DAG and flow layouts only make sense with arrows. */
+export const layoutsOf = (directed: boolean): readonly { id: LayoutId; label: string; build: () => Shape }[] =>
+  directed ? [...GRAPH_LAYOUTS, ...DIRECTED_LAYOUTS] : GRAPH_LAYOUTS;
+
+const weightOf = (a: Point, b: Point) => Math.max(1, Math.round(Math.hypot(a[0] - b[0], a[1] - b[1]) / 30));
+
+const reachable = (adj: number[][], from: number) => {
+  const seen = new Set([from]);
+  const stack = [from];
+  while (stack.length) for (const v of adj[stack.pop()!]) if (!seen.has(v)) seen.add(v), stack.push(v);
+  return seen;
+};
+
+const nearSegment = (p: Point, a: Point, b: Point) => {
+  const len2 = (b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2;
+  const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * (b[0] - a[0]) + (p[1] - a[1]) * (b[1] - a[1])) / len2));
+  return Math.hypot(p[0] - (a[0] + t * (b[0] - a[0])), p[1] - (a[1] + t * (b[1] - a[1]))) < 40;
+};
+
+/**
+ * Up to two back edges, each closing the shortest cycle it can: the pair whose forward paths cover the fewest nodes.
+ * The two cycles share no node and no edge passes through another node, so the picture stays readable.
+ */
+function backEdges({ nodes, edges }: Graph): Graph["edges"] {
+  const out = nodes.map(() => [] as number[]);
+  const into = nodes.map(() => [] as number[]);
+  for (const { u, v } of edges) out[u].push(v), into[v].push(u);
+  const point = (i: number): Point => [nodes[i].x, nodes[i].y];
+  const cycles: { a: number; b: number; path: number[] }[] = [];
+  for (const { id: a } of nodes) {
+    const down = reachable(out, a);
+    for (const { id: b } of nodes) {
+      if (b <= a || !down.has(b) || out[a].includes(b)) continue;
+      if (nodes.some((n) => n.id !== a && n.id !== b && nearSegment(point(n.id), point(a), point(b)))) continue;
+      const up = reachable(into, b);
+      cycles.push({ a, b, path: [...down].filter((x) => up.has(x)) });
+    }
+  }
+  cycles.sort((p, q) => p.path.length - q.path.length || p.a - q.a || p.b - q.b);
+  const used = new Set<number>();
+  const picked: typeof cycles = [];
+  for (const c of cycles) {
+    if (picked.length < 2 && c.path.every((x) => !used.has(x))) {
+      picked.push(c);
+      c.path.forEach((x) => used.add(x));
+    }
+  }
+  return picked.map(({ a, b }) => ({ u: b, v: a, w: weightOf(point(b), point(a)) }));
+}
+
+/** An undirected layout with `directed` set becomes an arrow graph: low index to high, plus back edges when "cyclic". */
+export function buildGraph(layout: LayoutId, directed?: Directed): Graph {
+  const { points, edges, weights } = layoutsOf(true).find((l) => l.id === layout)!.build();
+  const graph: Graph = {
+    nodes: points.map(([x, y], id) => ({ id, name: NAMES[id], x, y })),
+    edges: edges.map(([u, v], i) => ({ u, v, w: weights?.[i] ?? weightOf(points[u], points[v]) })),
+  };
+  if (!directed) return graph;
+  const forward = { ...graph, edges: graph.edges.map((e) => (e.u < e.v ? e : { ...e, u: e.v, v: e.u })) };
+  return directed === "cyclic" ? { ...forward, edges: [...forward.edges, ...backEdges(forward)] } : forward;
 }
 
 export function withRandomWeights(graph: Graph): Graph {
