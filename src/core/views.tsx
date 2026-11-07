@@ -1,8 +1,9 @@
 import type { ComponentType } from "react";
 import { ArrayView } from "../components/ArrayView";
 import { GraphView } from "../components/GraphView";
+import { ScanView } from "../components/ScanView";
 import { GRAPH_LAYOUTS, buildGraph, randomArray, withRandomWeights, type LayoutId } from "./inputs";
-import type { Algorithm, Graph } from "./types";
+import type { Algorithm, Graph, ScanInput } from "./types";
 
 type Kind = Algorithm["kind"];
 type AlgoOf<K extends Kind> = Extract<Algorithm, { kind: K }>;
@@ -108,7 +109,33 @@ const graph: ViewRow<"graph", GraphInput> = {
   endState: { all: ".node", done: '.node[data-mark="visited"]', label: "every node ends visited" },
 };
 
-export const VIEWS = { sorting, graph } satisfies { [K in Kind]: ViewRow<K, any> };
+const SCAN_SIZE = { initial: 16, min: 4, max: 48 };
+
+const scan: ViewRow<"scan", ScanInput> = {
+  makeInput: (algo) => algo.makeInput(SCAN_SIZE.initial),
+  largestInput: (algo) => algo.makeInput(SCAN_SIZE.max),
+  run: (algo, input) => algo.run(input),
+  Canvas: ({ algo, frame }) => <ScanView algo={algo} frame={frame} />,
+  Controls: ({ algo, input, setInput }) => (
+    <>
+      <label>
+        Size <strong>{input.values.length}</strong>
+        <input
+          type="range"
+          min={SCAN_SIZE.min}
+          max={SCAN_SIZE.max}
+          value={input.values.length}
+          onChange={(e) => setInput(algo.makeInput(+e.target.value))}
+        />
+      </label>
+      <button onClick={() => setInput(algo.makeInput(input.values.length))}>New input</button>
+    </>
+  ),
+  legend: [],
+  endState: { all: ".scan-view", done: ".scan-view .answer", label: "the answer shows at the last step" },
+};
+
+export const VIEWS = { sorting, graph, scan } satisfies { [K in Kind]: ViewRow<K, any> };
 
 export type Input = ReturnType<(typeof VIEWS)[Kind]["makeInput"]>;
 export type Frame = FrameOf<Kind>;
