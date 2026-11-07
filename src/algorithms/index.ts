@@ -16,6 +16,9 @@ import { lis } from "./dp/lis";
 import { nQueens } from "./backtracking/n-queens";
 import { sudoku } from "./backtracking/sudoku";
 import { wordSearch } from "./backtracking/word-search";
+import { islands } from "./grids/islands";
+import { gridShortestPath } from "./grids/grid-shortest-path";
+import { uniquePaths } from "./grids/unique-paths";
 
 /** Every algorithm the app knows about. Add a new one by appending it here. */
 export const ALGORITHMS: Algorithm[] = [
@@ -36,6 +39,9 @@ export const ALGORITHMS: Algorithm[] = [
   nQueens,
   sudoku,
   wordSearch,
+  islands,
+  gridShortestPath,
+  uniquePaths,
 ];
 
 export const findAlgorithm = (id: string) => ALGORITHMS.find((a) => a.id === id);
