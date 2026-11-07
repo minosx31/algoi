@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { ALGORITHMS } from "./index";
+import { floydWarshall } from "./graph/floyd-warshall";
 import { labelsOf } from "../core/code";
 import { GRAPH_LAYOUTS, buildGraph, randomArray, withRandomWeights } from "../core/inputs";
 import { LANGUAGES, TOPIC_LABELS, type Graph } from "../core/types";
@@ -75,6 +76,18 @@ test("every kind has a VIEWS row", () => {
 
 test("algorithm ids are unique", () => {
   expect(new Set(ids).size).toBe(ids.length);
+});
+
+test("floyd-warshall's final matrix matches shortestWeighted from every source", () => {
+  for (const n of [4, 5, 6])
+    for (let k = 0; k < 30; k++) {
+      const g = floydWarshall.makeInput(n);
+      const last = floydWarshall.run(g).at(-1)!;
+      for (const { id: s } of g.nodes) {
+        const want = shortestWeighted(g, s);
+        expect(last.cells[s].map((c) => c.text)).toEqual(want.map(String));
+      }
+    }
 });
 
 describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {

@@ -7,6 +7,7 @@ import { quickSort } from "./sorting/quick";
 import { bfs } from "./graph/bfs";
 import { dfs } from "./graph/dfs";
 import { dijkstra } from "./graph/dijkstra";
+import { floydWarshall } from "./graph/floyd-warshall";
 import { lcs } from "./dp/lcs";
 import { editDistance } from "./dp/edit-distance";
 import { knapsack } from "./dp/knapsack";
@@ -23,6 +24,7 @@ export const ALGORITHMS: Algorithm[] = [
   bfs,
   dfs,
   dijkstra,
+  floydWarshall,
   lcs,
   editDistance,
   knapsack,
