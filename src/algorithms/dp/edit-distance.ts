@@ -180,7 +180,7 @@ function editDistance(a, b) {
     const memo = new Map<number, number>();
     const go = (i: number, j: number): number => {
       if (i === 0 || j === 0) return i + j;
-      const key = i * 64 + j;
+      const key = i * (b.length + 1) + j;
       if (!memo.has(key)) {
         const v = a[i - 1] === b[j - 1] ? go(i - 1, j - 1) : 1 + Math.min(go(i - 1, j), go(i, j - 1), go(i - 1, j - 1));
         memo.set(key, v);

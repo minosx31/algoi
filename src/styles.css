@@ -479,11 +479,25 @@ main {
     border-color 120ms,
     color 120ms;
 }
-.grid-view td[data-box~="r"] {
-  border-right: 3px solid var(--text-secondary);
+.grid-view td[data-box]::before,
+.grid-view td[data-box]::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  background: var(--text-secondary);
+  pointer-events: none;
 }
-.grid-view td[data-box~="b"] {
-  border-bottom: 3px solid var(--text-secondary);
+.grid-view td[data-box~="r"]::after {
+  top: calc(var(--gap) / -2);
+  bottom: calc(var(--gap) / -2);
+  right: calc(var(--gap) / -2 - 1.5px);
+  width: 3px;
+}
+.grid-view td[data-box~="b"]::before {
+  left: calc(var(--gap) / -2);
+  right: calc(var(--gap) / -2);
+  bottom: calc(var(--gap) / -2 - 1.5px);
+  height: 3px;
 }
 .grid-view :where(.legend i) {
   border: 1px solid var(--border);

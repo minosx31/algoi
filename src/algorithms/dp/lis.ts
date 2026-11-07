@@ -137,7 +137,7 @@ function lis(a) {
       }
     }
 
-    const best = Math.max(...dp);
+    const best = n === 0 ? 0 : Math.max(...dp);
     dp.forEach((v, i) => {
       if (v === best) t.mark(0, i, "result");
     });

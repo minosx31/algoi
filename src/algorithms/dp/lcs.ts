@@ -162,7 +162,7 @@ function lcs(a, b) {
     const memo = new Map<number, number>();
     const go = (i: number, j: number): number => {
       if (i === a.length || j === b.length) return 0;
-      const key = i * 64 + j;
+      const key = i * (b.length + 1) + j;
       if (!memo.has(key)) memo.set(key, a[i] === b[j] ? 1 + go(i + 1, j + 1) : Math.max(go(i + 1, j), go(i, j + 1)));
       return memo.get(key)!;
     };

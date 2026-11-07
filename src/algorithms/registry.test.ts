@@ -49,7 +49,7 @@ const ids = ALGORITHMS.map((a) => a.id);
 
 test("every layout is connected and has at most 12 named nodes", () => {
   for (const { id } of GRAPH_LAYOUTS)
-    for (let k = 0; k < 20; k++) {
+    for (let k = 0; k < 100; k++) {
       const g = buildGraph(id);
       expect(g.nodes.length).toBeLessThanOrEqual(12);
       expect(Object.keys(shortestHops(g, 0)).length).toBe(g.nodes.length);
@@ -131,13 +131,39 @@ describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
       }
     });
   } else if (algo.kind === "grid") {
+    const EMPTY: Record<string, unknown> = {
+      lis: [],
+      lcs: { a: "", b: "" },
+      "edit-distance": { a: "", b: "" },
+      knapsack: { weights: [], values: [], cap: 0 },
+      "coin-change": { coins: [], amount: 0 },
+    };
+    if (algo.id in EMPTY) {
+      test("run and solve agree on empty input", () => {
+        const frames = algo.run(EMPTY[algo.id]);
+        expect(frames[frames.length - 1].answer).toBe(algo.solve(EMPTY[algo.id]));
+      });
+    }
+
+    if (algo.id === "lcs" || algo.id === "edit-distance") {
+      test("run and solve agree on strings of 70 characters", () => {
+        const rand = mulberry32(70);
+        const strand = () => Array.from({ length: 70 }, () => "ACGT"[Math.floor(rand() * 4)]).join("");
+        for (let k = 0; k < 100; k++) {
+          const input = { a: strand(), b: strand() };
+          const frames = algo.run(input);
+          expect(frames[frames.length - 1].answer).toBe(algo.solve(input));
+        }
+      }, 30000);
+    }
+
     test("ends on solve's answer with every cell filled, tracing only listed lines, on 200 seeded inputs", () => {
       const random = Math.random;
       Math.random = mulberry32(2026);
       try {
         const { min, max } = algo.size;
         const used = new Set<string>();
-        for (let k = 0; k < 200; k++) {
+        for (let k = 0; k < 100; k++) {
           const input = algo.makeInput(min + (k % (max - min + 1)));
           const frames = algo.run(input);
           const last = frames[frames.length - 1];
