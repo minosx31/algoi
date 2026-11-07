@@ -8,6 +8,12 @@ export const minWindowSum: ScanAlgorithm = {
   kind: "scan",
   topic: "arrays",
   pointers: ["left", "right"],
+  legend: [
+    ["active", "In the window"],
+    ["compare", "Value just added"],
+    ["band", "Window"],
+    ["found", "Shortest window"],
+  ],
   about: {
     summary: "Finds the shortest run of consecutive positive values whose sum reaches a target by growing a window on the right and shrinking it from the left as long as the sum still reaches the target.",
     invariants: [

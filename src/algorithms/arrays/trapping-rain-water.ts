@@ -8,6 +8,13 @@ export const trappingRainWater: ScanAlgorithm = {
   kind: "scan",
   topic: "arrays",
   pointers: ["l", "r"],
+  legend: [
+    ["active", "Not yet settled"],
+    ["muted", "Settled"],
+    ["compare", "Just settled"],
+    ["band", "Water"],
+  ],
+  labelTitle: "water held above each index",
   about: {
     summary: "Totals the water held between bars of an elevation map with two pointers that move inward, always advancing the side whose running maximum is lower because that side's water level is already fixed.",
     invariants: [

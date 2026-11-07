@@ -7,6 +7,13 @@ export const majorityVote: ScanAlgorithm = {
   kind: "scan",
   topic: "arrays",
   pointers: ["i"],
+  legend: [
+    ["compare", "Current"],
+    ["pivot", "Unmatched copy of the candidate"],
+    ["swap", "Cancelled pair"],
+    ["muted", "Cancelled"],
+    ["found", "Candidate"],
+  ],
   about: {
     summary: "Finds the value that fills more than half of an array in one pass and O(1) space by cancelling each value against a different one; a true majority outnumbers everything else and survives, and a second pass confirms it.",
     invariants: [

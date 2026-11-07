@@ -8,6 +8,14 @@ export const largestRectangle: ScanAlgorithm = {
   kind: "scan",
   topic: "arrays",
   pointers: ["i"],
+  legend: [
+    ["compare", "Current bar"],
+    ["pivot", "Waiting on the stack"],
+    ["swap", "Popped"],
+    ["band", "Rectangle of the popped bar"],
+    ["found", "Largest rectangle"],
+  ],
+  labelTitle: "area of each popped bar",
   about: {
     summary: "Finds the largest rectangle under a histogram by keeping a stack of bars with rising heights; a bar that is no taller than the stack top fixes how far that top bar can stretch right, and the stack below it fixes how far left.",
     invariants: [

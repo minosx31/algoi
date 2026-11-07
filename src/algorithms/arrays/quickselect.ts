@@ -8,6 +8,15 @@ export const quickselect: ScanAlgorithm = {
   kind: "scan",
   topic: "arrays",
   pointers: ["i", "j"],
+  legend: [
+    ["active", "Still in range"],
+    ["muted", "Dropped"],
+    ["pivot", "Pivot"],
+    ["compare", "Being compared"],
+    ["swap", "Moved"],
+    ["found", "k-th smallest"],
+  ],
+  labelTitle: "index where rank k belongs",
   about: {
     summary: "Finds the k-th smallest value without sorting everything: partition around a pivot, then keep only the side that must hold rank k and ignore the other.",
     invariants: [
