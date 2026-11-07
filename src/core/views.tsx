@@ -1,7 +1,8 @@
 import type { ComponentType } from "react";
 import { ArrayView } from "../components/ArrayView";
 import { GraphView } from "../components/GraphView";
-import { GRAPH_LAYOUTS, buildGraph, randomArray, withRandomWeights, type LayoutId } from "./inputs";
+import { StringView } from "../components/StringView";
+import { GRAPH_LAYOUTS, buildGraph, randomArray, randomSearch, withRandomWeights, type LayoutId } from "./inputs";
 import type { Algorithm, Graph } from "./types";
 
 type Kind = Algorithm["kind"];
@@ -108,7 +109,41 @@ const graph: ViewRow<"graph", GraphInput> = {
   endState: { all: ".node", done: '.node[data-mark="visited"]', label: "every node ends visited" },
 };
 
-export const VIEWS = { sorting, graph } satisfies { [K in Kind]: ViewRow<K, any> };
+const TEXT_SIZE = { initial: 16, min: 8, max: 32 };
+
+type StringInput = { text: string; pattern: string };
+
+const string: ViewRow<"string", StringInput> = {
+  makeInput: () => randomSearch(TEXT_SIZE.initial),
+  largestInput: () => randomSearch(TEXT_SIZE.max),
+  run: (algo, { text, pattern }) => algo.run(text, pattern),
+  Canvas: ({ frame }) => <StringView frame={frame} />,
+  Controls: ({ input, setInput }) => (
+    <>
+      <label>
+        Text length <strong>{input.text.length}</strong>
+        <input
+          type="range"
+          min={TEXT_SIZE.min}
+          max={TEXT_SIZE.max}
+          value={input.text.length}
+          onChange={(e) => setInput(randomSearch(+e.target.value))}
+        />
+      </label>
+      <button onClick={() => setInput(randomSearch(input.text.length))}>New text</button>
+    </>
+  ),
+  legend: [
+    ["match", "Match"],
+    ["mismatch", "Mismatch"],
+    ["known", "Known without comparing"],
+    ["window", "Hash window"],
+    ["found", "Occurrence"],
+  ],
+  endState: { all: ".string-view .matches li", done: '.string-view[data-phase="done"] .matches li', label: "the search ends with its match list shown" },
+};
+
+export const VIEWS = { sorting, graph, string } satisfies { [K in Kind]: ViewRow<K, any> };
 
 export type Input = ReturnType<(typeof VIEWS)[Kind]["makeInput"]>;
 export type Frame = FrameOf<Kind>;
