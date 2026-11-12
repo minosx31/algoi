@@ -21,6 +21,11 @@ import { kahn } from "./graph/kahn";
 import { cycleDetect } from "./graph/cycle-detect";
 import { tarjanScc } from "./graph/tarjan-scc";
 import { edmondsKarp } from "./graph/edmonds-karp";
+import { binarySearch } from "./arrays/binary-search";
+import { twoSumSorted } from "./arrays/two-sum-sorted";
+import { slidingWindowMax } from "./arrays/sliding-window-max";
+import { kadane } from "./arrays/kadane";
+import { nextGreater } from "./arrays/next-greater";
 
 /** Every algorithm the app knows about. Add a new one by appending it here. */
 export const ALGORITHMS: Algorithm[] = [
@@ -46,6 +51,11 @@ export const ALGORITHMS: Algorithm[] = [
   cycleDetect,
   tarjanScc,
   edmondsKarp,
+  binarySearch,
+  twoSumSorted,
+  slidingWindowMax,
+  kadane,
+  nextGreater,
 ];
 
 export const findAlgorithm = (id: string) => ALGORITHMS.find((a) => a.id === id);

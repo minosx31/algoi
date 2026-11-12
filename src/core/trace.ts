@@ -1,4 +1,4 @@
-import type { ArrayFrame, ArrayItem, BarMark, Graph, GraphFrame, Vars } from "./types";
+import type { ArrayFrame, ArrayItem, BarMark, Graph, GraphFrame, ScanAnswer, ScanFrame, Vars } from "./types";
 import { edgeKey } from "./types";
 
 /** Records full-snapshot frames while a sorting algorithm mutates `items`. */
@@ -83,5 +83,42 @@ export class GraphTracer {
     const frame: GraphFrame = { line, note, vars: extra.vars, nodes, edges, labels: { ...this.labels }, aux: { title: aux.title, items: aux.items.slice() } };
     if (this.edgeLabels) frame.edgeLabels = { ...this.edgeLabels };
     this.frames.push(frame);
+  }
+}
+
+/**
+ * Records full-snapshot frames for array scans. Point `aux` and `answer` at the
+ * live structures once; every step copies them.
+ */
+export class ScanTracer {
+  readonly frames: ScanFrame[] = [];
+  readonly items: ArrayItem[];
+  readonly labels: ScanFrame["labels"] = {};
+  aux?: { title: string; indices: number[] };
+  answer?: ScanAnswer;
+
+  constructor(values: number[]) {
+    this.items = values.map((value, id) => ({ id, value }));
+  }
+
+  range(lo: number, hi: number, marks: ScanFrame["marks"] = {}): ScanFrame["marks"] {
+    const all: ScanFrame["marks"] = {};
+    for (let i = 0; i < this.items.length; i++) all[i] = i < lo || i > hi ? "muted" : "active";
+    return Object.assign(all, marks);
+  }
+
+  step(line: string, note: string, extra: Partial<Pick<ScanFrame, "marks" | "pointers" | "bands" | "vars">> = {}) {
+    this.frames.push({
+      line,
+      note,
+      vars: extra.vars,
+      items: this.items.slice(),
+      marks: extra.marks ?? {},
+      pointers: extra.pointers ?? {},
+      bands: extra.bands ?? [],
+      labels: { ...this.labels },
+      aux: this.aux && { title: this.aux.title, indices: this.aux.indices.slice() },
+      answer: Array.isArray(this.answer) ? this.answer.slice() : this.answer,
+    });
   }
 }
