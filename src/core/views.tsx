@@ -3,8 +3,9 @@ import { ArrayView } from "../components/ArrayView";
 import { GraphView } from "../components/GraphView";
 import { GridView } from "../components/GridView";
 import { ScanView } from "../components/ScanView";
+import { StringView } from "../components/StringView";
 import { TreeView } from "../components/TreeView";
-import { buildGraph, layoutsOf, randomArray, randomKeys, withRandomWeights, type LayoutId } from "./inputs";
+import { buildGraph, layoutsOf, randomArray, randomKeys, randomSearch, withRandomWeights, type LayoutId } from "./inputs";
 import type { Algorithm, Graph, GridAlgorithm, ScanInput } from "./types";
 
 type Kind = Algorithm["kind"];
@@ -235,7 +236,41 @@ const tree: ViewRow<"tree", TreeInput> = {
   endState: () => ({ all: ".tree-node", done: '.workspace:has(.answer) .tree-node[data-mark="done"]', label: "every node ends done and the answer shows" }),
 };
 
-export const VIEWS = { sorting, graph, scan, grid, tree } satisfies { [K in Kind]: ViewRow<K, any> };
+const TEXT_SIZE = { initial: 16, min: 8, max: 32 };
+
+type StringInput = { text: string; pattern: string };
+
+const string: ViewRow<"string", StringInput> = {
+  makeInput: () => randomSearch(TEXT_SIZE.initial),
+  largestInput: () => randomSearch(TEXT_SIZE.max),
+  run: (algo, { text, pattern }) => algo.run(text, pattern),
+  Canvas: ({ frame }) => <StringView frame={frame} />,
+  Controls: ({ input, setInput }) => (
+    <>
+      <label>
+        Text length <strong>{input.text.length}</strong>
+        <input
+          type="range"
+          min={TEXT_SIZE.min}
+          max={TEXT_SIZE.max}
+          value={input.text.length}
+          onChange={(e) => setInput(randomSearch(+e.target.value))}
+        />
+      </label>
+      <button onClick={() => setInput(randomSearch(input.text.length))}>New text</button>
+    </>
+  ),
+  legend: [
+    ["match", "Match"],
+    ["mismatch", "Mismatch"],
+    ["known", "Known without comparing"],
+    ["window", "Hash window"],
+    ["found", "Occurrence"],
+  ],
+  endState: () => ({ all: ".string-view .matches li", done: '.string-view[data-phase="done"] .matches li', label: "the search ends with its match list shown" }),
+};
+
+export const VIEWS = { sorting, graph, scan, grid, tree, string } satisfies { [K in Kind]: ViewRow<K, any> };
 
 export type Input = ReturnType<(typeof VIEWS)[Kind]["makeInput"]>;
 export type Frame = FrameOf<Kind>;

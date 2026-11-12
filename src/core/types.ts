@@ -105,6 +105,26 @@ export type GridFrame = FrameBase & {
   aux?: { title: string; items: string[] };
   answer?: string;
 };
+export type StringMark = "match" | "mismatch" | "known" | "window" | "active";
+
+type AuxValues = { title: string; values: (number | null)[]; marks: Partial<Record<number, StringMark>> };
+
+export type StringAux = AuxValues & ({ under: "text" | "pattern" } | { under: "table"; keys: string[] });
+
+/** "prepare" builds tables before the pattern meets the text. */
+type StringPhase = { phase: "prepare" } | { phase: "search"; offset: number } | { phase: "done" };
+
+export type StringFrame = FrameBase &
+  StringPhase & {
+    text: string;
+    pattern: string;
+    /** Scanned ahead of the text: Z-function search scans pattern + "$" + text. */
+    prefix: string;
+    /** By pattern index. During the search each mark also colours the text cell above it. */
+    marks: Partial<Record<number, StringMark>>;
+    aux?: StringAux;
+    matches: number[];
+  };
 
 /** Every algorithm documents itself in the same fixed structure. */
 export type About = {
@@ -115,7 +135,7 @@ export type About = {
 
 export type Complexity = { best: string; average: string; worst: string; space: string };
 
-export const TOPIC_LABELS = { sorting: "Sorting", graph: "Graph", arrays: "Arrays", dp: "Dynamic programming", backtracking: "Backtracking", grids: "Grids", tree: "Trees" } as const;
+export const TOPIC_LABELS = { sorting: "Sorting", graph: "Graph", arrays: "Arrays", dp: "Dynamic programming", backtracking: "Backtracking", grids: "Grids", tree: "Trees", strings: "Strings" } as const;
 export type Topic = keyof typeof TOPIC_LABELS;
 
 type AlgorithmBase = {
@@ -179,6 +199,11 @@ export type TreeAlgorithm = AlgorithmBase & {
   run: (keys: number[]) => TreeFrame[];
 };
 
-export type Algorithm = SortingAlgorithm | GraphAlgorithm | ScanAlgorithm | GridAlgorithm | TreeAlgorithm;
+export type StringAlgorithm = AlgorithmBase & {
+  kind: "string";
+  run: (text: string, pattern: string) => StringFrame[];
+};
+
+export type Algorithm = SortingAlgorithm | GraphAlgorithm | ScanAlgorithm | GridAlgorithm | TreeAlgorithm | StringAlgorithm;
 
 export const edgeKey = (u: number, v: number) => (u < v ? `${u}-${v}` : `${v}-${u}`);

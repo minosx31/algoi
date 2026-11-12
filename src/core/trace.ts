@@ -1,4 +1,4 @@
-import type { ArrayFrame, ArrayItem, BarMark, CellMark, Coord, Graph, GraphFrame, GridCell, GridFrame, ScanAnswer, ScanFrame, TreeFrame, TreeMark, TreeNode, Vars } from "./types";
+import type { ArrayFrame, ArrayItem, BarMark, CellMark, Coord, Graph, GraphFrame, GridCell, GridFrame, ScanAnswer, ScanFrame, StringAux, StringFrame, StringMark, TreeFrame, TreeMark, TreeNode, Vars } from "./types";
 import { edgeKey } from "./types";
 
 /** Records full-snapshot frames while a sorting algorithm mutates `items`. */
@@ -204,5 +204,60 @@ export class TreeTracer {
       aux: { title: this.aux.title, items: this.aux.items.slice() },
       answer: this.answer,
     });
+  }
+}
+
+/** Records full-snapshot frames while a pattern slides along a text. */
+export class StringTracer {
+  readonly frames: StringFrame[] = [];
+  readonly matches: number[] = [];
+  readonly text: string;
+  readonly pattern: string;
+  readonly prefix: string;
+  readonly row: string;
+  phase: StringFrame["phase"] = "search";
+  offset = 0;
+  marks: Partial<Record<number, StringMark>> = {};
+  aux: StringAux | undefined;
+  compares = 0;
+
+  constructor(text: string, pattern: string, prefix = "") {
+    this.text = text;
+    this.pattern = pattern;
+    this.prefix = prefix;
+    this.row = prefix + text;
+  }
+
+  /** Puts pattern[0] under row[offset]; the first `known` characters already match. */
+  slide(offset: number, known = 0) {
+    this.phase = "search";
+    this.offset = offset;
+    this.marks = {};
+    for (let j = 0; j < known; j++) this.marks[j] = "known";
+  }
+
+  compare(j: number) {
+    this.compares++;
+    const same = this.row[this.offset + j] === this.pattern[j];
+    this.marks[j] = same ? "match" : "mismatch";
+    return same;
+  }
+
+  step(line: string, note: string, extra: { vars?: Vars; active?: number } = {}) {
+    let aux: StringAux | undefined;
+    if (this.aux) {
+      aux = { ...this.aux, values: this.aux.values.slice(), marks: { ...this.aux.marks } };
+      if (extra.active !== undefined) aux.marks[extra.active] = "active";
+    }
+    const at = this.phase === "search" ? { phase: this.phase, offset: this.offset } : { phase: this.phase };
+    const { text, pattern, prefix } = this;
+    const vars = { ...extra.vars, compares: this.compares };
+    this.frames.push({ line, note, vars, ...at, text, pattern, prefix, marks: { ...this.marks }, aux, matches: this.matches.slice() });
+  }
+
+  finish(line: string, note: string) {
+    this.phase = "done";
+    this.marks = {};
+    this.step(line, note);
   }
 }
