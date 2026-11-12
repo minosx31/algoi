@@ -75,6 +75,21 @@ export type ScanFrame = FrameBase & {
 /** `target` is a value to find or a sum to reach; `k` is a window size or a rank. */
 export type ScanInput = { values: number[]; target?: number; k?: number };
 
+/** "pending" cells are not filled yet. A "read" cell gets an arrow to the frame's single "current" cell. */
+export type CellMark = "pending" | "current" | "read" | "frontier" | "result" | "blocked" | "conflict";
+export type GridCell = { text: string; mark?: CellMark };
+export type Coord = readonly [row: number, col: number];
+
+export type GridFrame = FrameBase & {
+  cells: GridCell[][];
+  rowHeaders?: string[];
+  colHeaders?: string[];
+  /** Draws a heavier rule between boxes of this size, as on a Sudoku board. */
+  box?: { rows: number; cols: number };
+  aux?: { title: string; items: string[] };
+  answer?: string;
+};
+
 /** Every algorithm documents itself in the same fixed structure. */
 export type About = {
   summary: string;
@@ -84,7 +99,7 @@ export type About = {
 
 export type Complexity = { best: string; average: string; worst: string; space: string };
 
-export const TOPIC_LABELS = { sorting: "Sorting", graph: "Graph", arrays: "Arrays" } as const;
+export const TOPIC_LABELS = { sorting: "Sorting", graph: "Graph", arrays: "Arrays", dp: "Dynamic programming" } as const;
 export type Topic = keyof typeof TOPIC_LABELS;
 
 type AlgorithmBase = {
@@ -129,6 +144,20 @@ export type ScanAlgorithm = AlgorithmBase & {
   solve: (input: ScanInput) => ScanAnswer;
 };
 
-export type Algorithm = SortingAlgorithm | GraphAlgorithm | ScanAlgorithm;
+/**
+ * run and solve use method syntax so their parameters are bivariant: a GridAlgorithm<LcsInput> then fits the
+ * Algorithm union as GridAlgorithm<unknown>. The grid view only ever hands an algorithm its own makeInput result.
+ */
+export type GridAlgorithm<I = unknown> = AlgorithmBase & {
+  kind: "grid";
+  size: { label: string; min: number; max: number; initial: number };
+  legend: readonly (readonly [mark: CellMark, label: string])[];
+  makeInput(size: number): I;
+  run(input: I): GridFrame[];
+  /** The final frame's answer, computed without the traced table. */
+  solve(input: I): string;
+};
+
+export type Algorithm = SortingAlgorithm | GraphAlgorithm | ScanAlgorithm | GridAlgorithm;
 
 export const edgeKey = (u: number, v: number) => (u < v ? `${u}-${v}` : `${v}-${u}`);

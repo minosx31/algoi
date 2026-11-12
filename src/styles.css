@@ -577,6 +577,158 @@ main {
   border-bottom-color: var(--action);
 }
 
+.canvas:has(.grid-view) {
+  height: auto;
+  padding: var(--space-3);
+}
+.grid-view {
+  --cell: 36px;
+  --gap: 2px;
+  --arrow: hsl(28, 90%, 40%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.grid-scroll {
+  max-height: 440px;
+  overflow: auto;
+  isolation: isolate;
+}
+.grid-view table {
+  margin: 0 auto;
+  border-collapse: separate;
+  border-spacing: var(--gap);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+.grid-view th {
+  position: sticky;
+  z-index: 2;
+  background: var(--surface-sunken);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.grid-view thead th {
+  top: 0;
+  height: var(--cell);
+}
+.grid-view tbody th {
+  left: 0;
+  padding: 0 var(--space-2);
+}
+.grid-view thead th:first-child {
+  left: 0;
+  z-index: 3;
+}
+.grid-view td {
+  position: relative;
+  width: var(--cell);
+  min-width: var(--cell);
+  height: var(--cell);
+  padding: 0;
+  text-align: center;
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  transition:
+    background-color 120ms,
+    border-color 120ms,
+    color 120ms;
+}
+.grid-view td[data-box]::before,
+.grid-view td[data-box]::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  background: var(--text-secondary);
+  pointer-events: none;
+}
+/* Offsets start at the padding edge, so each reaches past the 1px border
+   and half the gap to meet the neighbouring cell's segment. */
+.grid-view td[data-box~="r"]::after {
+  top: calc(var(--gap) / -2 - 1px);
+  bottom: calc(var(--gap) / -2 - 1px);
+  right: calc(var(--gap) / -2 - 2.5px);
+  width: 3px;
+}
+.grid-view td[data-box~="b"]::before {
+  left: calc(var(--gap) / -2 - 1px);
+  right: calc(var(--gap) / -2 - 1px);
+  bottom: calc(var(--gap) / -2 - 2.5px);
+  height: 3px;
+}
+.grid-view :where(.legend i) {
+  border: 1px solid var(--border);
+}
+.grid-view [data-mark="pending"] {
+  background: transparent;
+  border-style: dashed;
+}
+.grid-view [data-mark="current"] {
+  background: var(--active);
+  border-color: var(--active);
+  color: var(--node-text-on-mark);
+  font-weight: var(--weight-bold);
+}
+.grid-view [data-mark="read"] {
+  background: color-mix(in srgb, var(--compare) 28%, var(--surface-raised));
+  border-color: var(--compare);
+  font-weight: var(--weight-bold);
+}
+.grid-view [data-mark="frontier"] {
+  background: color-mix(in srgb, var(--active) 22%, var(--surface-raised));
+  border-color: var(--active);
+}
+.grid-view [data-mark="result"] {
+  background: var(--sorted);
+  border-color: var(--sorted);
+  color: var(--node-text-on-mark);
+  font-weight: var(--weight-bold);
+}
+.grid-view [data-mark="blocked"] {
+  background: var(--border-strong);
+  border-color: var(--border-strong);
+  color: var(--surface-raised);
+}
+.grid-view [data-mark="conflict"] {
+  background: var(--swap);
+  border-color: var(--swap);
+  color: var(--node-text-on-mark);
+  font-weight: var(--weight-bold);
+}
+.grid-view .arrow {
+  --pitch: calc(var(--cell) + var(--gap));
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 50%;
+  width: calc(hypot(var(--dx), var(--dy)) * var(--pitch) - 22px);
+  height: 2px;
+  background: var(--arrow);
+  transform-origin: 0 50%;
+  transform: rotate(atan2(var(--dy), var(--dx))) translateX(9px);
+  pointer-events: none;
+}
+.grid-view .arrow::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: -4px;
+  border: 5px solid transparent;
+  border-left: 7px solid var(--arrow);
+  border-right: 0;
+}
+@media (prefers-color-scheme: dark) {
+  .grid-view {
+    --arrow: hsl(36, 90%, 62%);
+  }
+}
+
+.legend:empty {
+  display: none;
+}
 .legend {
   display: flex;
   flex-wrap: wrap;
@@ -934,6 +1086,12 @@ main {
   .weight {
     font-size: 20px;
   }
+  .grid-view {
+    --cell: 30px;
+  }
+  .grid-scroll {
+    max-height: 320px;
+  }
   .code {
     max-height: 360px;
   }
@@ -945,7 +1103,8 @@ main {
   .arrow,
   .node circle,
   .band,
-  .chip {
+  .chip,
+  .grid-view td {
     transition: none;
   }
 }

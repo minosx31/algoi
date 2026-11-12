@@ -31,6 +31,12 @@ import { largestRectangle } from "./arrays/largest-rectangle";
 import { trappingRainWater } from "./arrays/trapping-rain-water";
 import { minWindowSum } from "./arrays/min-window-sum";
 import { majorityVote } from "./arrays/majority-vote";
+import { floydWarshall } from "./graph/floyd-warshall";
+import { lcs } from "./dp/lcs";
+import { editDistance } from "./dp/edit-distance";
+import { knapsack } from "./dp/knapsack";
+import { coinChange } from "./dp/coin-change";
+import { lis } from "./dp/lis";
 
 /** Every algorithm the app knows about. Add a new one by appending it here. */
 export const ALGORITHMS: Algorithm[] = [
@@ -66,6 +72,12 @@ export const ALGORITHMS: Algorithm[] = [
   trappingRainWater,
   minWindowSum,
   majorityVote,
+  floydWarshall,
+  lcs,
+  editDistance,
+  knapsack,
+  coinChange,
+  lis,
 ];
 
 export const findAlgorithm = (id: string) => ALGORITHMS.find((a) => a.id === id);

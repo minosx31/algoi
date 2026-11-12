@@ -1,9 +1,10 @@
 import type { ComponentType } from "react";
 import { ArrayView } from "../components/ArrayView";
 import { GraphView } from "../components/GraphView";
+import { GridView } from "../components/GridView";
 import { ScanView } from "../components/ScanView";
 import { buildGraph, layoutsOf, randomArray, withRandomWeights, type LayoutId } from "./inputs";
-import type { Algorithm, Graph, ScanInput } from "./types";
+import type { Algorithm, Graph, GridAlgorithm, ScanInput } from "./types";
 
 type Kind = Algorithm["kind"];
 type AlgoOf<K extends Kind> = Extract<Algorithm, { kind: K }>;
@@ -149,7 +150,49 @@ const scan: ViewRow<"scan", ScanInput> = {
   endState: () => ({ all: ".scan-view", done: ".scan-view .answer", label: "the answer shows at the last step" }),
 };
 
-export const VIEWS = { sorting, graph, scan } satisfies { [K in Kind]: ViewRow<K, any> };
+type GridInput = { size: number; data: unknown };
+
+const gridInput = (algo: GridAlgorithm, size: number): GridInput => ({ size, data: algo.makeInput(size) });
+
+const grid: ViewRow<"grid", GridInput> = {
+  makeInput: (algo) => gridInput(algo, algo.size.initial),
+  largestInput: (algo) => gridInput(algo, algo.size.max),
+  run: (algo, { data }) => algo.run(data),
+  Canvas: ({ algo, frame }) => <GridView frame={frame} legend={algo.legend} />,
+  Controls: ({ algo, input, setInput }) => (
+    <>
+      <label>
+        {algo.size.label} <strong>{input.size}</strong>
+        <input
+          type="range"
+          min={algo.size.min}
+          max={algo.size.max}
+          value={input.size}
+          onChange={(e) => setInput(gridInput(algo, +e.target.value))}
+        />
+      </label>
+      <button onClick={() => setInput(gridInput(algo, input.size))}>New input</button>
+    </>
+  ),
+  Status: ({ frame }) => (
+    <>
+      {frame.aux && (
+        <span className="aux">
+          {frame.aux.title}: <b>[{frame.aux.items.join(", ")}]</b>
+        </span>
+      )}
+      {frame.answer !== undefined && (
+        <span className="aux answer">
+          Answer: <b>{frame.answer}</b>
+        </span>
+      )}
+    </>
+  ),
+  legend: [],
+  endState: () => ({ all: ".grid-view td", done: '.grid-view td:not([data-mark="pending"])', label: "every cell ends filled" }),
+};
+
+export const VIEWS = { sorting, graph, scan, grid } satisfies { [K in Kind]: ViewRow<K, any> };
 
 export type Input = ReturnType<(typeof VIEWS)[Kind]["makeInput"]>;
 export type Frame = FrameOf<Kind>;

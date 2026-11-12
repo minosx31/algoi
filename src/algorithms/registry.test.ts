@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { ALGORITHMS } from "./index";
+import { floydWarshall } from "./graph/floyd-warshall";
 import { labelsOf } from "../core/code";
 import { buildGraph, layoutsOf, randomArray, withRandomWeights } from "../core/inputs";
 import { LANGUAGES, TOPIC_LABELS, edgeKey, type Graph, type GraphFrame, type ScanFrame, type ScanInput } from "../core/types";
@@ -290,7 +291,7 @@ const ids = ALGORITHMS.map((a) => a.id);
 
 test("every layout is connected and has at most 12 named nodes", () => {
   for (const { id } of layoutsOf(true))
-    for (let k = 0; k < 20; k++) {
+    for (let k = 0; k < 100; k++) {
       const g = buildGraph(id);
       expect(g.nodes.length).toBeLessThanOrEqual(12);
       expect(Object.keys(shortestHops(g, 0)).length).toBe(g.nodes.length);
@@ -324,6 +325,18 @@ test("kadane does not claim a zero sum would lower the next run", () => {
 
 test("algorithm ids are unique", () => {
   expect(new Set(ids).size).toBe(ids.length);
+});
+
+test("floyd-warshall's final matrix matches shortestWeighted from every source", () => {
+  for (const n of [4, 5, 6])
+    for (let k = 0; k < 30; k++) {
+      const g = floydWarshall.makeInput(n);
+      const last = floydWarshall.run(g).at(-1)!;
+      for (const { id: s } of g.nodes) {
+        const want = shortestWeighted(g, s);
+        expect(last.cells[s].map((c) => c.text)).toEqual(want.map(String));
+      }
+    }
 });
 
 describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
@@ -453,6 +466,55 @@ describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
         const last = frames[frames.length - 1];
         if (!algo.stopsAtGoal && !algo.stopsAtCycle) for (const node of g.nodes) expect(last.nodes[node.id]).toBe("visited");
         GRAPH_ORACLES[algo.id]?.(g, start, last);
+      }
+    });
+  } else if (algo.kind === "grid") {
+    const EMPTY: Record<string, unknown> = {
+      lis: [],
+      lcs: { a: "", b: "" },
+      "edit-distance": { a: "", b: "" },
+      knapsack: { weights: [], values: [], cap: 0 },
+      "coin-change": { coins: [], amount: 0 },
+    };
+    if (algo.id in EMPTY) {
+      test("run and solve agree on empty input", () => {
+        const frames = algo.run(EMPTY[algo.id]);
+        expect(frames[frames.length - 1].answer).toBe(algo.solve(EMPTY[algo.id]));
+      });
+    }
+
+    if (algo.id === "lcs" || algo.id === "edit-distance") {
+      test("run and solve agree on strings of 70 characters", () => {
+        const rand = mulberry32(70);
+        const strand = () => Array.from({ length: 70 }, () => "ACGT"[Math.floor(rand() * 4)]).join("");
+        for (let k = 0; k < 100; k++) {
+          const input = { a: strand(), b: strand() };
+          const frames = algo.run(input);
+          expect(frames[frames.length - 1].answer).toBe(algo.solve(input));
+        }
+      }, 30000);
+    }
+
+    test("ends on solve's answer with every cell filled, tracing only listed lines, on 200 seeded inputs", () => {
+      const random = Math.random;
+      Math.random = mulberry32(2026);
+      try {
+        const { min, max } = algo.size;
+        const used = new Set<string>();
+        for (let k = 0; k < 100; k++) {
+          const input = algo.makeInput(min + (k % (max - min + 1)));
+          const frames = algo.run(input);
+          const last = frames[frames.length - 1];
+          expect(last.answer).toBe(algo.solve(input));
+          expect(last.cells.flat().filter((c) => c.mark === "pending")).toEqual([]);
+          for (const f of frames) used.add(f.line);
+        }
+        for (const lang of LANGUAGES) {
+          const missing = [...used].filter((l) => !labelsOf(algo.code[lang.id]).has(l));
+          expect({ lang: lang.id, missing }).toEqual({ lang: lang.id, missing: [] });
+        }
+      } finally {
+        Math.random = random;
       }
     });
   }
