@@ -99,7 +99,7 @@ export type About = {
 
 export type Complexity = { best: string; average: string; worst: string; space: string };
 
-export const TOPIC_LABELS = { sorting: "Sorting", graph: "Graph", arrays: "Arrays", dp: "Dynamic programming" } as const;
+export const TOPIC_LABELS = { sorting: "Sorting", graph: "Graph", arrays: "Arrays", dp: "Dynamic programming", backtracking: "Backtracking", grids: "Grids" } as const;
 export type Topic = keyof typeof TOPIC_LABELS;
 
 type AlgorithmBase = {
