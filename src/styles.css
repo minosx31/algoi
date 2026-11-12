@@ -356,6 +356,17 @@ main {
   stroke: var(--sorted);
   stroke-width: 5;
 }
+.arrow {
+  fill: var(--idle);
+  transform: translateX(-24px);
+  transition: fill 200ms;
+}
+.edge[data-mark="considered"] .arrow {
+  fill: var(--compare);
+}
+.edge[data-mark="tree"] .arrow {
+  fill: var(--sorted);
+}
 .weight {
   font-size: 14px;
   font-weight: var(--weight-bold);
@@ -375,6 +386,9 @@ main {
   transition:
     fill 200ms,
     stroke 200ms;
+}
+.node[data-static] {
+  pointer-events: none;
 }
 .node:hover circle {
   stroke: var(--action);
@@ -906,6 +920,9 @@ main {
   .node circle {
     r: 30px;
   }
+  .arrow {
+    transform: translateX(-32px) scale(1.5);
+  }
   .node .name {
     font-size: 24px;
     transform: translateY(3px);
@@ -925,6 +942,7 @@ main {
 @media (prefers-reduced-motion: reduce) {
   .bar,
   .edge line,
+  .arrow,
   .node circle,
   .band,
   .chip {
