@@ -5,6 +5,7 @@ export const bfs: GraphAlgorithm = {
   id: "bfs",
   name: "Breadth-First Search",
   kind: "graph",
+  topic: "graph",
   weighted: false,
   about: {
     summary: "Explores the graph in rings, every node one edge away, then two, and so on, using a FIFO queue as the frontier.",

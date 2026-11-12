@@ -5,6 +5,7 @@ export const insertionSort: SortingAlgorithm = {
   id: "insertion-sort",
   name: "Insertion Sort",
   kind: "sorting",
+  topic: "sorting",
   about: {
     summary: "Grows a sorted prefix one element at a time, sliding each new value left past every larger value until it fits.",
     invariants: [

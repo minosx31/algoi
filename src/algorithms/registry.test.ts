@@ -2,10 +2,13 @@ import { describe, expect, test } from "bun:test";
 import { ALGORITHMS } from "./index";
 import { labelsOf } from "../core/code";
 import { GRAPH_LAYOUTS, buildGraph, randomArray, withRandomWeights } from "../core/inputs";
-import { LANGUAGES, type Graph } from "../core/types";
+import { LANGUAGES, TOPIC_LABELS, type Graph } from "../core/types";
+import { VIEWS, viewOf } from "../core/views";
 
 function framesOf(algo: (typeof ALGORITHMS)[number]) {
-  return algo.kind === "sorting" ? algo.run(randomArray(12)) : algo.run(withRandomWeights(buildGraph("mesh")), 0);
+  if (algo.kind === "sorting") return algo.run(randomArray(12));
+  if (algo.kind === "graph") return algo.run(withRandomWeights(buildGraph("mesh")), 0);
+  return viewOf(algo).run(algo, viewOf(algo).largestInput(algo));
 }
 
 function shortestHops(g: Graph, s: number) {
@@ -52,6 +55,15 @@ test("every algorithm documents summary, invariants, complexity, and use cases",
   }
 });
 
+test("every algorithm has a topic with a label, and every topic has an algorithm", () => {
+  for (const a of ALGORITHMS) expect(TOPIC_LABELS[a.topic]).toBeTruthy();
+  for (const topic of Object.keys(TOPIC_LABELS)) expect(ALGORITHMS.some((a) => a.topic === topic)).toBe(true);
+});
+
+test("every kind has a VIEWS row", () => {
+  for (const a of ALGORITHMS) expect(VIEWS[a.kind]).toBeDefined();
+});
+
 test("algorithm ids are unique", () => {
   expect(new Set(ids).size).toBe(ids.length);
 });
@@ -79,7 +91,7 @@ describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
         for (const f of frames) expect(new Set(f.items.map((x) => x.id)).size).toBe(n);
       }
     });
-  } else {
+  } else if (algo.kind === "graph") {
     test.each(GRAPH_LAYOUTS.map((l) => l.id))("visits everything with correct final labels on %s", (layout) => {
       for (const start of [0, 5, 9]) {
         const g = withRandomWeights(buildGraph(layout));
