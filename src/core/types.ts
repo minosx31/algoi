@@ -126,6 +126,23 @@ export type StringFrame = FrameBase &
     matches: number[];
   };
 
+export type OpsMark = "probe" | "hit" | "miss" | "new" | "moved" | "tomb" | "empty" | "link";
+
+/** `id` keeps a cell's DOM node across frames, so a cell that changes position slides there. */
+export type Cell = { id: string; text: string; sub?: string; mark?: OpsMark };
+
+/** A point on a hash ring, `angle` degrees clockwise from the top. `tone` picks the owning server's colour. */
+export type RingPoint = { id: string; text: string; angle: number; tone: number; mark?: OpsMark };
+
+/** A ring row draws each node's arc back to the previous node, so the arc shows which keys it owns. */
+export type OpsRow = { title: string; cells: Cell[] } | { title: string; ring: { nodes: RingPoint[]; keys: RingPoint[] } };
+
+export type OpsFrame = FrameBase & {
+  log: { op: string; result?: string }[];
+  at: number;
+  rows: OpsRow[];
+};
+
 /** Every algorithm documents itself in the same fixed structure. */
 export type About = {
   summary: string;
@@ -135,7 +152,7 @@ export type About = {
 
 export type Complexity = { best: string; average: string; worst: string; space: string };
 
-export const TOPIC_LABELS = { sorting: "Sorting", graph: "Graph", arrays: "Arrays", dp: "Dynamic programming", backtracking: "Backtracking", grids: "Grids", tree: "Trees", strings: "Strings" } as const;
+export const TOPIC_LABELS = { sorting: "Sorting", graph: "Graph", arrays: "Arrays", dp: "Dynamic programming", backtracking: "Backtracking", grids: "Grids", tree: "Trees", strings: "Strings", systems: "System design" } as const;
 export type Topic = keyof typeof TOPIC_LABELS;
 
 type AlgorithmBase = {
@@ -204,6 +221,17 @@ export type StringAlgorithm = AlgorithmBase & {
   run: (text: string, pattern: string) => StringFrame[];
 };
 
-export type Algorithm = SortingAlgorithm | GraphAlgorithm | ScanAlgorithm | GridAlgorithm | TreeAlgorithm | StringAlgorithm;
+/**
+ * Each structure has its own op type. Method syntax keeps the parameters bivariant,
+ * so an `OpsAlgorithm<LruOp>` fits the union; the script always comes from the same algorithm's `makeInput`.
+ */
+export type OpsAlgorithm<Op = unknown> = AlgorithmBase & {
+  kind: "ops";
+  makeInput(size: number): Op[];
+  solve(script: readonly Op[]): string[];
+  run(script: readonly Op[]): OpsFrame[];
+};
+
+export type Algorithm = SortingAlgorithm | GraphAlgorithm | ScanAlgorithm | GridAlgorithm | TreeAlgorithm | StringAlgorithm | OpsAlgorithm;
 
 export const edgeKey = (u: number, v: number) => (u < v ? `${u}-${v}` : `${v}-${u}`);

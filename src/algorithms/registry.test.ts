@@ -3,7 +3,7 @@ import { ALGORITHMS } from "./index";
 import { floydWarshall } from "./graph/floyd-warshall";
 import { labelsOf } from "../core/code";
 import { buildGraph, layoutsOf, randomArray, randomKeys, randomSearch, withRandomWeights } from "../core/inputs";
-import { LANGUAGES, TOPIC_LABELS, edgeKey, type Graph, type GraphFrame, type ScanFrame, type ScanInput, type StringAlgorithm, type StringFrame, type StringMark, type TreeFrame } from "../core/types";
+import { LANGUAGES, TOPIC_LABELS, edgeKey, type Cell, type Graph, type GraphFrame, type OpsFrame, type ScanFrame, type ScanInput, type StringAlgorithm, type StringFrame, type StringMark, type TreeFrame } from "../core/types";
 import { VIEWS, viewOf } from "../core/views";
 import { MIN_NODE_DISTANCE, layoutTree } from "../components/TreeView";
 
@@ -328,6 +328,54 @@ function referenceOrders(keys: number[]) {
 }
 
 const TREE_SIZES = [3, 4, 5, 9, 15];
+
+const cellsOf = (f: OpsFrame, row = 0): Cell[] => {
+  const r = f.rows[row];
+  return "cells" in r ? r.cells : [];
+};
+const ringKeys = (f: OpsFrame) => {
+  const r = f.rows[0];
+  return "ring" in r ? r.ring.keys : [];
+};
+
+/** The case each structure exists to teach, read from the frames a viewer steps through. */
+const OPS_CASES: Record<string, (frames: OpsFrame[]) => boolean> = {
+  "lru-cache": (frames) => {
+    const full = frames.filter((f) => f.line === "full");
+    const touch = frames.filter((f) => f.line === "touch");
+    const evictsBack = (f: OpsFrame) => {
+      const cells = cellsOf(f);
+      return cells.findIndex((c) => c.mark === "miss") === cells.filter((c) => c.text !== "").length - 1;
+    };
+    return full.length > 0 && full.every(evictsBack) && touch.length > 0 && touch.every((f) => cellsOf(f)[0].mark === "hit");
+  },
+  "bloom-filter": (frames) => {
+    const added = (f: OpsFrame) => cellsOf(f, 1).some((c) => c.text === f.vars?.word);
+    const noFalseNegative = frames.filter((f) => f.line === "absent").every((f) => !added(f));
+    return noFalseNegative && frames.some((f) => f.line === "maybe" && !added(f));
+  },
+  "hash-table": (frames) =>
+    frames.some((f, i) => f.line === "probe" && cellsOf(f)[f.vars!.i as number].text === "†" && ["probe", "match"].includes(frames[i + 1].line)),
+  "token-bucket": (frames) => {
+    const reject = frames.filter((f) => f.line === "reject");
+    return reject.length > 0 && reject.every((f) => cellsOf(f).every((c) => c.text === ""));
+  },
+  "consistent-hashing": (frames) => {
+    let movedAny = false;
+    for (const [i, f] of frames.entries()) {
+      if (f.line !== "move") continue;
+      const r = f.rows[0];
+      const newTone = "ring" in r ? r.ring.nodes.find((n) => n.mark === "new")!.tone : -1;
+      const before = new Map(ringKeys(frames[i - 1]).map((k) => [k.id, k.tone]));
+      for (const k of ringKeys(f)) {
+        if (k.tone === before.get(k.id)) continue;
+        if (k.tone !== newTone || k.mark !== "moved") return false;
+        movedAny = true;
+      }
+    }
+    return movedAny;
+  },
+};
 
 const ids = ALGORITHMS.map((a) => a.id);
 
@@ -662,6 +710,31 @@ describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
             }
             expect(frames[frames.length - 1].aux.items.map(Number).sort((a, b) => a - b)).toEqual([...keys].sort((a, b) => a - b));
           }
+      });
+  } else if (algo.kind === "ops") {
+    test("200 seeded scripts log what solve() predicts, without mutating the script, and teach their case", () => {
+      for (let seed = 1; seed <= 200; seed++) {
+        const script = seeded(seed, () => algo.makeInput(seed % 2 ? 12 : 40));
+        const frames = algo.run(Object.freeze(script.map((op) => Object.freeze(op))));
+        const results = frames[frames.length - 1].log.map((e) => e.result);
+        expect({ seed, results }).toEqual({ seed, results: algo.solve(script) });
+        expect({ seed, teaches: OPS_CASES[algo.id](frames) }).toEqual({ seed, teaches: true });
+      }
+    });
+
+    if (algo.id === "hash-table")
+      test("a table full of keys or tombstones stops after m probes instead of looping", () => {
+        const keys = Array.from({ length: 11 }, (_, i) => i * 11 + 1);
+        const script = [
+          ...keys.map((key) => ({ name: "insert", key })),
+          { name: "insert", key: 200 },
+          { name: "find", key: 200 },
+          ...keys.map((key) => ({ name: "delete", key })),
+          { name: "find", key: 1 },
+        ] as Parameters<typeof algo.solve>[0];
+        const results = algo.run(script).at(-1)!.log.map((e) => e.result);
+        expect(results).toEqual(algo.solve(script));
+        expect(results.filter((r) => r === "full" || r === "-1")).toEqual(["full", "-1", "-1"]);
       });
   }
 });

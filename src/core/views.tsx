@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import { ArrayView } from "../components/ArrayView";
 import { GraphView } from "../components/GraphView";
 import { GridView } from "../components/GridView";
+import { OpsView } from "../components/OpsView";
 import { ScanView } from "../components/ScanView";
 import { StringView } from "../components/StringView";
 import { TreeView } from "../components/TreeView";
@@ -270,7 +271,30 @@ const string: ViewRow<"string", StringInput> = {
   endState: () => ({ all: ".string-view .matches li", done: '.string-view[data-phase="done"] .matches li', label: "the search ends with its match list shown" }),
 };
 
-export const VIEWS = { sorting, graph, scan, grid, tree, string } satisfies { [K in Kind]: ViewRow<K, any> };
+const OPS_SIZE = { initial: 12, max: 40 };
+
+type OpsInput = { script: unknown[] };
+
+const ops: ViewRow<"ops", OpsInput> = {
+  makeInput: (algo) => ({ script: algo.makeInput(OPS_SIZE.initial) }),
+  largestInput: (algo) => ({ script: algo.makeInput(OPS_SIZE.max) }),
+  run: (algo, { script }) => algo.run(script),
+  Canvas: ({ frame }) => <OpsView frame={frame} />,
+  Controls: ({ algo, setInput }) => (
+    <button onClick={() => setInput({ script: algo.makeInput(OPS_SIZE.initial) })}>New script</button>
+  ),
+  legend: [
+    ["probe", "Checking"],
+    ["hit", "Hit"],
+    ["miss", "Miss or removed"],
+    ["new", "Written"],
+    ["moved", "Moved"],
+    ["tomb", "Tombstone"],
+  ],
+  endState: () => ({ all: ".ops-log li", done: '.ops-log li[data-mark="done"]', label: "every op in the log has a result" }),
+};
+
+export const VIEWS = { sorting, graph, scan, grid, tree, string, ops } satisfies { [K in Kind]: ViewRow<K, any> };
 
 export type Input = ReturnType<(typeof VIEWS)[Kind]["makeInput"]>;
 export type Frame = FrameOf<Kind>;

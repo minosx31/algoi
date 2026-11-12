@@ -1,4 +1,4 @@
-import type { ArrayFrame, ArrayItem, BarMark, CellMark, Coord, Graph, GraphFrame, GridCell, GridFrame, ScanAnswer, ScanFrame, StringAux, StringFrame, StringMark, TreeFrame, TreeMark, TreeNode, Vars } from "./types";
+import type { ArrayFrame, ArrayItem, BarMark, CellMark, Coord, Graph, GraphFrame, GridCell, GridFrame, OpsFrame, OpsRow, ScanAnswer, ScanFrame, StringAux, StringFrame, StringMark, TreeFrame, TreeMark, TreeNode, Vars } from "./types";
 import { edgeKey } from "./types";
 
 /** Records full-snapshot frames while a sorting algorithm mutates `items`. */
@@ -259,5 +259,26 @@ export class StringTracer {
     this.phase = "done";
     this.marks = {};
     this.step(line, note);
+  }
+}
+
+/** Records frames for a script of operations. The algorithm builds fresh rows for every step. */
+export class OpsTracer {
+  readonly frames: OpsFrame[] = [];
+  readonly results: string[] = [];
+  readonly ops: readonly string[];
+  at = 0;
+
+  constructor(ops: readonly string[]) {
+    this.ops = ops;
+  }
+
+  answer(result: string) {
+    this.results[this.at] = result;
+  }
+
+  step(line: string, note: string, rows: OpsRow[], vars?: Vars) {
+    const log = this.ops.map((op, i) => ({ op, result: this.results[i] }));
+    this.frames.push({ line, note, vars, rows, at: this.at, log });
   }
 }
