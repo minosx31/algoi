@@ -1,5 +1,5 @@
 import { OpsTracer } from "../../core/trace";
-import type { CellMark, OpsAlgorithm, OpsRow } from "../../core/types";
+import type { OpsMark, OpsAlgorithm, OpsRow } from "../../core/types";
 
 type HashOp = { name: "insert" | "find" | "delete"; key: number };
 
@@ -225,7 +225,7 @@ class HashTable {
     const t = new OpsTracer(script.map((op) => `${op.name}(${op.key})`));
     const slots: (number | null | typeof TOMB)[] = Array(M).fill(null);
 
-    const rows = (marks: Partial<Record<number, CellMark>> = {}): OpsRow[] => [
+    const rows = (marks: Partial<Record<number, OpsMark>> = {}): OpsRow[] => [
       {
         title: `Slots, home = key mod ${M}`,
         cells: slots.map((s, i) => ({
@@ -237,7 +237,7 @@ class HashTable {
       },
     ];
 
-    const every = (mark: CellMark) => Object.fromEntries(slots.map((_, i) => [i, mark]));
+    const every = (mark: OpsMark) => Object.fromEntries(slots.map((_, i) => [i, mark]));
 
     const find = (key: number, vars: Record<string, number>, last: boolean) => {
       let i = key % M;

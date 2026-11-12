@@ -1,5 +1,5 @@
 import { OpsTracer } from "../../core/trace";
-import type { CellMark, OpsAlgorithm, OpsRow } from "../../core/types";
+import type { OpsMark, OpsAlgorithm, OpsRow } from "../../core/types";
 
 type TokenOp = { name: "allow"; now: number };
 
@@ -135,13 +135,13 @@ class TokenBucket {
     let tokens = CAPACITY;
     let last = 0;
 
-    const rows = (marks: Partial<Record<number, CellMark>> = {}): OpsRow[] => [
+    const rows = (marks: Partial<Record<number, OpsMark>> = {}): OpsRow[] => [
       {
         title: `Tokens, capacity ${CAPACITY}, +${RATE} per second`,
         cells: Array.from({ length: CAPACITY }, (_, i) => ({ id: `t${i}`, text: i < tokens ? "●" : "", mark: marks[i] ?? (i < tokens ? undefined : "empty") })),
       },
     ];
-    const range = (from: number, to: number, mark: CellMark) => Object.fromEntries(Array.from({ length: Math.max(0, to - from) }, (_, k) => [from + k, mark]));
+    const range = (from: number, to: number, mark: OpsMark) => Object.fromEntries(Array.from({ length: Math.max(0, to - from) }, (_, k) => [from + k, mark]));
 
     script.forEach(({ now }, i) => {
       t.at = i;

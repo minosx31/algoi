@@ -1,5 +1,5 @@
 import { OpsTracer } from "../../core/trace";
-import type { CellMark, OpsAlgorithm, OpsRow } from "../../core/types";
+import type { OpsMark, OpsAlgorithm, OpsRow } from "../../core/types";
 
 type BloomOp = { name: "add" | "has"; word: string };
 
@@ -186,14 +186,14 @@ class BloomFilter {
     const bits: (string | undefined)[] = Array(M).fill(undefined);
     const added: string[] = [];
 
-    const rows = (marks: Partial<Record<number, CellMark>> = {}, words: Partial<Record<string, CellMark>> = {}): OpsRow[] => [
+    const rows = (marks: Partial<Record<number, OpsMark>> = {}, words: Partial<Record<string, OpsMark>> = {}): OpsRow[] => [
       {
         title: `Bits, m = ${M}`,
         cells: bits.map((setBy, i) => ({ id: `b${i}`, text: setBy ? "1" : "0", sub: String(i), mark: marks[i] })),
       },
       { title: "Added so far (not stored, shown for tracing)", cells: added.map((w) => ({ id: w, text: w, mark: words[w] })) },
     ];
-    const only = (at: number[], mark: CellMark) => Object.fromEntries(at.map((i) => [i, mark]));
+    const only = (at: number[], mark: OpsMark) => Object.fromEntries(at.map((i) => [i, mark]));
 
     script.forEach(({ name, word }, i) => {
       t.at = i;

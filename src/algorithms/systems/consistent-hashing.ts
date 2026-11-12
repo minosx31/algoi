@@ -1,5 +1,5 @@
 import { OpsTracer } from "../../core/trace";
-import type { CellMark, OpsAlgorithm, OpsRow } from "../../core/types";
+import type { OpsMark, OpsAlgorithm, OpsRow } from "../../core/types";
 
 type RingOp = { name: "addServer"; server: string } | { name: "put" | "get"; key: string };
 
@@ -208,7 +208,7 @@ class Ring {
     const owners = new Map<string, Vnode>();
     const tone = (server: string) => SERVERS.indexOf(server);
 
-    const rows = (marks: Partial<Record<string, CellMark>> = {}): OpsRow[] => [
+    const rows = (marks: Partial<Record<string, OpsMark>> = {}): OpsRow[] => [
       {
         title: "Hash ring, 0° at the top, clockwise",
         ring: {

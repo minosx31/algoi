@@ -1,5 +1,5 @@
 import { OpsTracer } from "../../core/trace";
-import type { Cell, CellMark, OpsAlgorithm, OpsRow } from "../../core/types";
+import type { Cell, OpsMark, OpsAlgorithm, OpsRow } from "../../core/types";
 
 type LruOp = { name: "get"; key: number } | { name: "put"; key: number; value: number };
 
@@ -186,7 +186,7 @@ class LRUCache {
 
     const buckets: (number | undefined)[] = Array(CAP).fill(undefined);
 
-    const rows = (marks: Partial<Record<number, CellMark>> = {}): OpsRow[] => {
+    const rows = (marks: Partial<Record<number, OpsMark>> = {}): OpsRow[] => {
       const blank = (id: string): Cell => ({ id, text: "", mark: "empty" });
       const chain = Array.from({ length: 2 * CAP - 1 }, (_, s): Cell => {
         const j = s >> 1;
