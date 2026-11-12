@@ -439,6 +439,7 @@ main {
   transition: d 300ms cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 .tree-node,
+.tree-label,
 .tree-cell {
   transition: transform 300ms cubic-bezier(0.2, 0.7, 0.3, 1);
 }
@@ -471,6 +472,13 @@ main {
 .tree-node:not([data-mark="idle"]) text,
 .tree-cell:not([data-mark="idle"]) text {
   fill: var(--node-text-on-mark);
+}
+.tree-label text {
+  text-anchor: middle;
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  fill: var(--text-secondary);
 }
 .tree-index {
   text-anchor: middle;
@@ -839,6 +847,10 @@ main {
     font-size: 18px;
     transform: translateY(1px);
   }
+  .tree-label text {
+    font-size: 14px;
+    transform: translateY(9px);
+  }
   .tree-index {
     font-size: 15px;
   }
@@ -853,6 +865,7 @@ main {
   .node circle,
   .tree-edge,
   .tree-node,
+  .tree-label,
   .tree-cell,
   .tree-node circle,
   .tree-cell rect {

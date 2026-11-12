@@ -6,6 +6,7 @@ const PAD = 30;
 const UNIT_MAX = 52;
 const ROW_MAX = 68;
 const ARRAY_ROW = 64;
+const CAPTION_ROOM = 22;
 const CELL_MAX = 44;
 const R = 18;
 
@@ -13,8 +14,8 @@ const R = 18;
 export const MIN_NODE_DISTANCE = 56;
 
 /**
- * Tidy layered layout. A leaf or a `null` child takes one slot, a parent sits midway between its first and last
- * child, and roots of a forest sit side by side. Same-row nodes of a binary tree end up at least two slots apart.
+ * Tidy layered layout. A `null` child takes one slot and a childless node two, as a binary leaf with two `null` children does.
+ * A parent sits midway between its first and last child, and roots of a forest sit side by side. Same-row nodes end up at least two slots apart.
  */
 export function layoutTree(frame: TreeFrame): Map<number, { x: number; y: number }> {
   const byId = new Map(frame.nodes.map((n) => [n.id, n]));
@@ -25,14 +26,15 @@ export function layoutTree(frame: TreeFrame): Map<number, { x: number; y: number
     if (id === null) return width++ + 0.5;
     depth = Math.max(depth, d);
     const xs = byId.get(id)!.children.map((c) => place(c, d + 1));
-    const x = xs.length === 0 ? width++ + 0.5 : (xs[0] + xs[xs.length - 1]) / 2;
+    const x = xs.length === 0 ? (width += 2) - 1 : (xs[0] + xs[xs.length - 1]) / 2;
     slots.push([id, x, d]);
     return x;
   };
   for (const root of frame.roots) place(root, 0);
   const unit = Math.min(UNIT_MAX, (W - 2 * PAD) / Math.max(1, width));
   const left = (W - unit * width) / 2;
-  const row = Math.min(ROW_MAX, (H - 2 * PAD - (frame.array ? ARRAY_ROW : 0)) / Math.max(1, depth));
+  const below = frame.array ? ARRAY_ROW : frame.nodes.some((n) => n.caption) ? CAPTION_ROOM : 0;
+  const row = Math.min(ROW_MAX, (H - 2 * PAD - below) / Math.max(1, depth));
   return new Map(slots.map(([id, x, d]) => [id, { x: left + x * unit, y: PAD + d * row }]));
 }
 
@@ -53,6 +55,15 @@ export function TreeView({ frame }: { frame: TreeFrame }) {
           <g key={n.id} className="tree-node" data-mark={n.mark ?? "idle"} style={{ transform: `translate(${x}px, ${y}px)` }}>
             <circle r={R} />
             <text dy="5">{n.value}</text>
+          </g>
+        );
+      })}
+      {frame.nodes.map((n) => {
+        if (!n.caption) return null;
+        const { x, y } = pos.get(n.id)!;
+        return (
+          <g key={n.id} className="tree-label" style={{ transform: `translate(${x}px, ${y}px)` }}>
+            <text y={R + 14}>{n.caption}</text>
           </g>
         );
       })}

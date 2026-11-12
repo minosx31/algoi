@@ -79,7 +79,7 @@ export class GraphTracer {
 }
 
 /** A node as an algorithm holds it; `TreeTracer` flattens these into `TreeNode`s with child ids. */
-export type TreeShape = { id: number; value: number | string; children: readonly (TreeShape | null)[] };
+export type TreeShape = { id: number; value: number | string; caption?: string; children: readonly (TreeShape | null)[] };
 
 type BinaryNode = { id: number; value: number | string; left: BinaryNode | null; right: BinaryNode | null };
 
@@ -108,7 +108,7 @@ export class TreeTracer {
     const nodes: TreeNode[] = [];
     const flatten = (shape: TreeShape | null): number | null => {
       if (!shape) return null;
-      const node: TreeNode = { id: shape.id, value: shape.value, children: [], mark: marks[shape.id] };
+      const node: TreeNode = { id: shape.id, value: shape.value, children: [], mark: marks[shape.id], caption: shape.caption };
       nodes.push(node);
       node.children = shape.children.map(flatten);
       return shape.id;
