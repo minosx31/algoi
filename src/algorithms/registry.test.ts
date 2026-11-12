@@ -204,6 +204,19 @@ describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
           }
       });
 
+    if (algo.id === "bst")
+      test("deleting a root with only a left or only a right child lifts that child", () => {
+        for (const [keys, child, kept] of [
+          [[5, 3, 1], 3, [3]],
+          [[5, 8, 9], 8, [8]],
+        ] as const) {
+          const frames = algo.run([...keys]);
+          const splice = frames.find((f) => f.line === "del-splice" && f.vars?.key === keys[0])!;
+          expect(splice.nodes.find((node) => node.mark === "target")?.value).toBe(child);
+          expect(inorder(frames[frames.length - 1])).toEqual([...kept]);
+        }
+      });
+
     if (algo.id === "binary-heap")
       test("only the key being sifted breaks the heap property, the array is the tree in level order, and pop-min returns the smallest keys", () => {
         for (const n of TREE_SIZES)
