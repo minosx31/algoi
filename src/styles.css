@@ -515,6 +515,12 @@ main {
   background: none;
   border-width: 2.5px;
 }
+.ops-view .cell[data-mark="link"] {
+  background: none;
+  border-color: transparent;
+  color: var(--text-secondary);
+  font-weight: var(--weight-normal);
+}
 .cell[data-mark="tomb"] {
   border-style: dashed;
   color: var(--text-secondary);

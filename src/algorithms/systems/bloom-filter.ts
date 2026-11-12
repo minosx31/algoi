@@ -191,7 +191,7 @@ class BloomFilter {
         title: `Bits, m = ${M}`,
         cells: bits.map((setBy, i) => ({ id: `b${i}`, text: setBy ? "1" : "0", sub: String(i), mark: marks[i] })),
       },
-      { title: "Words added", cells: added.map((w) => ({ id: w, text: w, mark: words[w] })) },
+      { title: "Added so far (not stored, shown for tracing)", cells: added.map((w) => ({ id: w, text: w, mark: words[w] })) },
     ];
     const only = (at: number[], mark: CellMark) => Object.fromEntries(at.map((i) => [i, mark]));
 

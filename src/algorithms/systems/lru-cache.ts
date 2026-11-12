@@ -184,19 +184,25 @@ class LRUCache {
     const t = new OpsTracer(script.map(label));
     const list: { key: number; value: number }[] = [];
 
+    const buckets: (number | undefined)[] = Array(CAP).fill(undefined);
+
     const rows = (marks: Partial<Record<number, CellMark>> = {}): OpsRow[] => {
-      const blanks = (n: number, from: number): Cell[] =>
-        Array.from({ length: n }, (_, i) => ({ id: `_${from + i}`, text: "", mark: "empty" }));
-      const keys = list.map((n) => n.key).sort((x, y) => x - y);
+      const blank = (id: string): Cell => ({ id, text: "", mark: "empty" });
+      const chain = Array.from({ length: 2 * CAP - 1 }, (_, s): Cell => {
+        const j = s >> 1;
+        if (s % 2) return { id: `l${j}`, text: j + 1 < list.length ? "⇄" : "", mark: "link" };
+        const node = list[j];
+        if (!node) return blank(`_${j}`);
+        const sub = [j === 0 && "head", j === list.length - 1 && "tail"].filter(Boolean).join("·");
+        return { id: `k${node.key}`, text: `${node.key}:${node.value}`, sub: sub || undefined, mark: marks[node.key] };
+      });
+      const map = buckets.map((key, s): Cell => {
+        const node = list.find((n) => n.key === key);
+        return node ? { id: `m${node.key}`, text: `${node.key}→${node.key}:${node.value}`, mark: marks[node.key] } : blank(`_m${s}`);
+      });
       return [
-        {
-          title: "Recency list, most → least recent",
-          cells: [...list.map(({ key, value }) => ({ id: `k${key}`, text: `${key}:${value}`, mark: marks[key] })), ...blanks(CAP - list.length, list.length)],
-        },
-        {
-          title: "Hash map keys",
-          cells: [...keys.map((key) => ({ id: `k${key}`, text: String(key), mark: marks[key] })), ...blanks(CAP - keys.length, keys.length)],
-        },
+        { title: "Doubly linked list, head = most recent, tail = least recent", cells: chain },
+        { title: "Hash map, key → list node", cells: map },
       ];
     };
     const size = () => `${list.length}/${CAP}`;
@@ -229,11 +235,13 @@ class LRUCache {
         const lru = list[CAP - 1];
         t.step("full", `put(${key}, ${op.value}): ${key} is new and the cache is full (${size()}), so evict the least recently used node.`, rows({ [lru.key]: "miss" }), { key, size: size() });
         list.pop();
+        buckets[buckets.indexOf(lru.key)] = undefined;
         result = `evicted ${lru.key}`;
         t.step("evict", `Evict ${lru.key}:${lru.value} from the back of the list and delete key ${lru.key} from the map.`, rows(), { key, size: size() });
       }
       if (pos >= 0) list.splice(pos, 1);
       list.unshift({ key, value: op.value });
+      if (pos < 0) buckets[buckets.indexOf(undefined)] = key;
       t.answer(result);
       const what = pos >= 0 ? `${key} is cached, so set its value to ${op.value} and move it to the front.` : `Add node ${key}:${op.value} at the front and point map[${key}] at it.`;
       t.step("insert", `put(${key}, ${op.value}): ${what}`, rows({ [key]: "new" }), { key, size: size() });

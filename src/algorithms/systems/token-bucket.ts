@@ -146,17 +146,18 @@ class TokenBucket {
     script.forEach(({ now }, i) => {
       t.at = i;
       const before = tokens;
+      const prev = last;
       const elapsed = now - last;
       tokens = Math.min(CAPACITY, tokens + elapsed * RATE);
       last = now;
-      const vars = { now, elapsed, tokens };
+      const vars = { now, last, elapsed, tokens };
       const gained = tokens - before;
       const added = elapsed * RATE;
       const refill =
         elapsed === 0
-          ? `no time has passed since the last request, so no tokens drip in and ${tokens} remain.`
-          : `${elapsed} s have passed, so add ${added} token${added === 1 ? "" : "s"}${gained < added ? `, capped at ${CAPACITY},` : ""} for ${tokens} in the bucket.`;
-      t.step("refill", `allow(t=${now}): ${refill}`, rows(range(before, tokens, "new")), vars);
+          ? `no time has passed since last = ${prev}, so no tokens drip in and ${tokens} remain.`
+          : `${elapsed} s have passed since last = ${prev}, so add ${added} token${added === 1 ? "" : "s"}${gained < added ? `, capped at ${CAPACITY},` : ""} for ${tokens} in the bucket.`;
+      t.step("refill", `allow(t=${now}): ${refill} Then last = ${now}.`, rows(range(before, tokens, "new")), vars);
 
       if (tokens < 1) {
         t.answer("rejected");

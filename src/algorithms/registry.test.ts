@@ -185,5 +185,20 @@ describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
         expect({ seed, teaches: OPS_CASES[algo.id](frames) }).toEqual({ seed, teaches: true });
       }
     });
+
+    if (algo.id === "hash-table")
+      test("a table full of keys or tombstones stops after m probes instead of looping", () => {
+        const keys = Array.from({ length: 11 }, (_, i) => i * 11 + 1);
+        const script = [
+          ...keys.map((key) => ({ name: "insert", key })),
+          { name: "insert", key: 200 },
+          { name: "find", key: 200 },
+          ...keys.map((key) => ({ name: "delete", key })),
+          { name: "find", key: 1 },
+        ] as Parameters<typeof algo.solve>[0];
+        const results = algo.run(script).at(-1)!.log.map((e) => e.result);
+        expect(results).toEqual(algo.solve(script));
+        expect(results.filter((r) => r === "full" || r === "-1")).toEqual(["full", "-1", "-1"]);
+      });
   }
 });

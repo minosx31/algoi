@@ -19,6 +19,7 @@ export const hashTable: OpsAlgorithm<HashOp> = {
       "Every stored key sits at its home slot or after it, with no empty slot between home and key, so a search may stop at the first empty slot.",
       "A delete writes a tombstone, not an empty slot: emptying it would cut the probe chain and hide the keys stored after it.",
       "Insert may reuse a tombstone, but only after a full search proves the key is not already stored further along.",
+      "Tombstones and live keys both fill slots, so a probe can cross the whole table: real tables track their load factor and rehash into a bigger array, while this fixed one stops after m probes and reports a full table.",
     ],
     useCases: [
       "Open addressing keeps a table in one contiguous array, which is cache friendly: Python's dict and Rust's HashMap both use it.",
@@ -31,7 +32,8 @@ export const hashTable: OpsAlgorithm<HashOp> = {
     pseudo: `
 procedure Find(key)
   i ← key mod m                                   @@hash
-  while slots[i] ≠ empty do                       @@probe
+  repeat m times                                  @@probe
+    if slots[i] = empty then return -1            @@empty
     if slots[i] = key then return i               @@match
     i ← (i + 1) mod m                             @@probe
   return -1                                       @@empty
@@ -39,7 +41,9 @@ procedure Find(key)
 procedure Insert(key)
   if Find(key) ≠ -1 then return                   @@dupe
   i ← key mod m                                   @@start
-  while slots[i] holds a key do i ← (i + 1) mod m @@scan
+  for n ← 1 to m while slots[i] holds a key do    @@scan
+    i ← (i + 1) mod m                             @@scan
+  if slots[i] holds a key then return             @@full
   slots[i] ← key                                  @@place
 
 procedure Delete(key)
@@ -55,17 +59,19 @@ class HashTable:
 
     def find(self, key):
         i = key % len(self.slots)                       @@hash
-        while self.slots[i] is not None:                @@probe
-            if self.slots[i] == key:                    @@match
-                return i                                @@match
+        for _ in self.slots:                            @@probe
+            if self.slots[i] is None: return -1         @@empty
+            if self.slots[i] == key: return i           @@match
             i = (i + 1) % len(self.slots)               @@probe
         return -1                                       @@empty
 
     def insert(self, key):
         if self.find(key) != -1: return                 @@dupe
         i = key % len(self.slots)                       @@start
-        while self.slots[i] not in (None, TOMB):        @@scan
+        for _ in self.slots:                            @@scan
+            if self.slots[i] in (None, TOMB): break     @@scan
             i = (i + 1) % len(self.slots)               @@scan
+        if self.slots[i] not in (None, TOMB): return    @@full
         self.slots[i] = key                             @@place
 
     def delete(self, key):
@@ -81,7 +87,7 @@ public:
     explicit HashTable(int m) : slots(m, EMPTY) {}
     int find(int key) const {
         int i = key % slots.size();                     @@hash
-        while (slots[i] != EMPTY) {                     @@probe
+        for (size_t n = 0; n < slots.size() && slots[i] != EMPTY; n++) {   @@probe
             if (slots[i] == key) return i;              @@match
             i = (i + 1) % slots.size();                 @@probe
         }
@@ -90,7 +96,9 @@ public:
     void insert(int key) {
         if (find(key) != -1) return;                    @@dupe
         int i = key % slots.size();                     @@start
-        while (slots[i] >= 0) i = (i + 1) % slots.size();   @@scan
+        for (size_t n = 0; n < slots.size() && slots[i] >= 0; n++)   @@scan
+            i = (i + 1) % slots.size();                 @@scan
+        if (slots[i] >= 0) return;                      @@full
         slots[i] = key;                                 @@place
     }
     void erase(int key) {
@@ -107,7 +115,7 @@ class HashTable {
 
     int find(int key) {
         int i = key % slots.length;                     @@hash
-        while (slots[i] != EMPTY) {                     @@probe
+        for (int n = 0; n < slots.length && slots[i] != EMPTY; n++) {   @@probe
             if (slots[i] == key) return i;              @@match
             i = (i + 1) % slots.length;                 @@probe
         }
@@ -116,7 +124,9 @@ class HashTable {
     void insert(int key) {
         if (find(key) != -1) return;                    @@dupe
         int i = key % slots.length;                     @@start
-        while (slots[i] >= 0) i = (i + 1) % slots.length;   @@scan
+        for (int n = 0; n < slots.length && slots[i] >= 0; n++)   @@scan
+            i = (i + 1) % slots.length;                 @@scan
+        if (slots[i] >= 0) return;                      @@full
         slots[i] = key;                                 @@place
     }
     void delete(int key) {
@@ -132,7 +142,7 @@ class HashTable {
   constructor(m) { this.slots = new Array(m).fill(null); }
   find(key) {
     let i = key % this.slots.length;                    @@hash
-    while (this.slots[i] !== null) {                    @@probe
+    for (let n = 0; n < this.slots.length && this.slots[i] !== null; n++) {   @@probe
       if (this.slots[i] === key) return i;              @@match
       i = (i + 1) % this.slots.length;                  @@probe
     }
@@ -141,8 +151,9 @@ class HashTable {
   insert(key) {
     if (this.find(key) !== -1) return;                  @@dupe
     let i = key % this.slots.length;                    @@start
-    while (this.slots[i] !== null && this.slots[i] !== TOMB)    @@scan
+    for (let n = 0; n < this.slots.length && typeof this.slots[i] === "number"; n++)   @@scan
       i = (i + 1) % this.slots.length;                  @@scan
+    if (typeof this.slots[i] === "number") return;      @@full
     this.slots[i] = key;                                @@place
   }
   delete(key) {
@@ -204,7 +215,8 @@ class HashTable {
       }
       if (at >= 0) return "exists";
       let i = key % M;
-      while (typeof slots[i] === "number") i = (i + 1) % M;
+      for (let n = 0; n < M && typeof slots[i] === "number"; n++) i = (i + 1) % M;
+      if (typeof slots[i] === "number") return "full";
       slots[i] = key;
       return `slot ${i}`;
     });
@@ -225,10 +237,12 @@ class HashTable {
       },
     ];
 
+    const every = (mark: CellMark) => Object.fromEntries(slots.map((_, i) => [i, mark]));
+
     const find = (key: number, vars: Record<string, number>, last: boolean) => {
       let i = key % M;
       t.step("hash", `Home slot for ${key} is ${key} mod ${M} = ${i}.`, rows({ [i]: "probe" }), { ...vars, i });
-      while (slots[i] !== null) {
+      for (let n = 0; n < M && slots[i] !== null; n++) {
         if (slots[i] === key) {
           if (last) t.answer(`slot ${i}`);
           t.step("match", `Slot ${i} holds ${key}: found it.`, rows({ [i]: "hit" }), { ...vars, i });
@@ -240,6 +254,10 @@ class HashTable {
         i = next;
       }
       if (last) t.answer("-1");
+      if (slots[i] !== null) {
+        t.step("empty", `All ${M} slots were probed and none is empty or holds ${key}, so ${key} is not here: return -1.`, rows(every("miss")), { ...vars, i });
+        return -1;
+      }
       t.step("empty", `Slot ${i} is empty, and a stored ${key} would sit before the first empty slot, so ${key} is not here: return -1.`, rows({ [i]: "miss" }), { ...vars, i });
       return -1;
     };
@@ -273,10 +291,15 @@ class HashTable {
       t.step("dupe", `find(${key}) returns -1: ${key} is not stored yet, so it is safe to insert.`, rows(), vars);
       let i = key % M;
       t.step("start", `Home slot for ${key} is ${key} mod ${M} = ${i}.`, rows({ [i]: "probe" }), { ...vars, i });
-      while (typeof slots[i] === "number") {
+      for (let n = 0; n < M && typeof slots[i] === "number"; n++) {
         const next = (i + 1) % M;
         t.step("scan", `Slot ${i} holds ${slots[i]}: try slot ${next}.`, rows({ [i]: "probe", [next]: "probe" }), { ...vars, i });
         i = next;
+      }
+      if (typeof slots[i] === "number") {
+        t.answer("full");
+        t.step("full", `All ${M} slots hold live keys, so there is no room for ${key}: drop the insert. A real table would have rehashed into a bigger array by now.`, rows(every("miss")), { ...vars, i });
+        return;
       }
       const reuse = slots[i] === TOMB;
       slots[i] = key;

@@ -46,7 +46,7 @@ export type Graph = {
   edges: { u: number; v: number; w: number }[];
 };
 
-export type CellMark = "probe" | "hit" | "miss" | "new" | "moved" | "tomb" | "empty";
+export type CellMark = "probe" | "hit" | "miss" | "new" | "moved" | "tomb" | "empty" | "link";
 
 /** `id` keeps a cell's DOM node across frames, so a cell that changes position slides there. */
 export type Cell = { id: string; text: string; sub?: string; mark?: CellMark };
