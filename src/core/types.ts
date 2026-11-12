@@ -47,8 +47,11 @@ export type GraphFrame = FrameBase & {
 export type Directed = "acyclic" | "cyclic";
 export type TreeMark = "compare" | "path" | "swap" | "target" | "done";
 
-/** A binary node lists `[left, right]` with `null` for a missing side; an n-ary node lists only real children. */
-export type TreeNode = { id: number; value: number | string; children: (number | null)[]; mark?: TreeMark };
+/**
+ * A binary node lists `[left, right]` with `null` for a missing side; an n-ary node lists only real children.
+ * A `caption` is drawn under the node, so give it only to leaves.
+ */
+export type TreeNode = { id: number; value: number | string; children: (number | null)[]; mark?: TreeMark; caption?: string };
 
 export type TreeFrame = FrameBase & {
   nodes: TreeNode[];

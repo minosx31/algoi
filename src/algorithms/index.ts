@@ -46,6 +46,11 @@ import { uniquePaths } from "./grids/unique-paths";
 import { bst } from "./trees/bst";
 import { treeTraversals } from "./trees/traversals";
 import { binaryHeap } from "./trees/binary-heap";
+import { avl } from "./trees/avl";
+import { trie } from "./trees/trie";
+import { segmentTree } from "./trees/segment-tree";
+import { fenwick } from "./trees/fenwick";
+import { huffman } from "./trees/huffman";
 
 /** Every algorithm the app knows about. Add a new one by appending it here. */
 export const ALGORITHMS: Algorithm[] = [
@@ -96,6 +101,11 @@ export const ALGORITHMS: Algorithm[] = [
   bst,
   treeTraversals,
   binaryHeap,
+  avl,
+  trie,
+  segmentTree,
+  fenwick,
+  huffman,
 ];
 
 export const findAlgorithm = (id: string) => ALGORITHMS.find((a) => a.id === id);
