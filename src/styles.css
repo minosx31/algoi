@@ -487,16 +487,18 @@ main {
   background: var(--text-secondary);
   pointer-events: none;
 }
+/* Offsets start at the padding edge, so each reaches past the 1px border
+   and half the gap to meet the neighbouring cell's segment. */
 .grid-view td[data-box~="r"]::after {
-  top: calc(var(--gap) / -2);
-  bottom: calc(var(--gap) / -2);
-  right: calc(var(--gap) / -2 - 1.5px);
+  top: calc(var(--gap) / -2 - 1px);
+  bottom: calc(var(--gap) / -2 - 1px);
+  right: calc(var(--gap) / -2 - 2.5px);
   width: 3px;
 }
 .grid-view td[data-box~="b"]::before {
-  left: calc(var(--gap) / -2);
-  right: calc(var(--gap) / -2);
-  bottom: calc(var(--gap) / -2 - 1.5px);
+  left: calc(var(--gap) / -2 - 1px);
+  right: calc(var(--gap) / -2 - 1px);
+  bottom: calc(var(--gap) / -2 - 2.5px);
   height: 3px;
 }
 .grid-view :where(.legend i) {
