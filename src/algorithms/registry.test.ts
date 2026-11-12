@@ -24,6 +24,13 @@ function seeded<T>(seed: number, make: () => T): T {
   }
 }
 
+/** The array-scan batch, whose oracles also hold on all-equal and strictly increasing arrays (binary search and two-sum need distinct values). */
+const EDGE_SHAPES: Record<string, (n: number) => number[]> = {
+  "all-equal": (n) => Array(n).fill(7),
+  "strictly increasing": (n) => Array.from({ length: n }, (_, i) => 5 + 2 * i),
+};
+const EDGE_ALGORITHMS = ["quickselect", "largest-rectangle", "trapping-rain-water", "min-window-sum", "majority-vote"];
+
 const count = (frames: ScanFrame[], ...lines: string[]) => frames.filter((f) => lines.includes(f.line)).length;
 
 /** The case each scan input should show most of the time, so a reader rarely gets a trace with nothing to see. */
@@ -45,6 +52,17 @@ const INTERESTING: Record<string, [label: string, holds: (input: ScanInput, fram
       return frames.some((f) => f.aux!.indices.length >= 2) && (last.answer as number[]).slice(0, -1).includes(-1);
     },
   ],
+  quickselect: ["needs at least two partition rounds", (_, frames) => count(frames, "place") >= 2],
+  "largest-rectangle": [
+    "pops bars and the best rectangle spans two or more bars",
+    (_, frames) => {
+      const best = frames[frames.length - 1].bands[0];
+      return count(frames, "pop") > 0 && best !== undefined && best.to > best.from;
+    },
+  ],
+  "trapping-rain-water": ["traps some water", (_, frames) => (frames[frames.length - 1].answer as number) > 0],
+  "min-window-sum": ["finds a window and shrinks at least twice", (_, frames) => (frames[frames.length - 1].answer as number) > 0 && count(frames, "shrink") >= 2],
+  "majority-vote": ["has a majority and cancels at least two pairs", (_, frames) => frames[frames.length - 1].answer !== -1 && count(frames, "differ") >= 2],
 };
 
 function framesOf(algo: (typeof ALGORITHMS)[number]) {
@@ -361,6 +379,34 @@ describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
         for (const f of frames.slice(0, -1)) expect(f.answer).toBeUndefined();
       }
     });
+
+    if (EDGE_ALGORITHMS.includes(algo.id))
+      test.each(Object.entries(EDGE_SHAPES))("matches the oracle on %s arrays of every size", (_, shape) => {
+        for (let n = 1; n <= 48; n++)
+          for (let s = 0; s < 4; s++) {
+            const input = { ...seeded(s, () => algo.makeInput(n)), values: shape(n) };
+            const frames = algo.run(input);
+            expect({ input, answer: frames[frames.length - 1].answer }).toEqual({ input, answer: algo.solve(input) });
+          }
+      });
+
+    if (algo.id === "trapping-rain-water")
+      test("marks a bar active only while it is unsettled, and every settled bar muted or just settled", () => {
+        for (const input of inputs)
+          for (const f of algo.run(input)) {
+            const { l, r } = f.pointers as { l: number; r: number };
+            for (let i = 0; i < input.values.length; i++) {
+              if (f.marks[i] === "active") {
+                expect(f.labels[i]).toBeUndefined();
+                expect(f.bands.some((b) => b.from <= i && i <= b.to)).toBe(false);
+                expect(i > l && i < r).toBe(true);
+              } else {
+                expect(["muted", "compare"]).toContain(f.marks[i]!);
+                expect(i <= l || i >= r).toBe(true);
+              }
+            }
+          }
+      });
 
     test("keeps every pointer on a declared name and inside the array", () => {
       for (const input of inputs)

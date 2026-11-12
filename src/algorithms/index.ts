@@ -26,6 +26,11 @@ import { twoSumSorted } from "./arrays/two-sum-sorted";
 import { slidingWindowMax } from "./arrays/sliding-window-max";
 import { kadane } from "./arrays/kadane";
 import { nextGreater } from "./arrays/next-greater";
+import { quickselect } from "./arrays/quickselect";
+import { largestRectangle } from "./arrays/largest-rectangle";
+import { trappingRainWater } from "./arrays/trapping-rain-water";
+import { minWindowSum } from "./arrays/min-window-sum";
+import { majorityVote } from "./arrays/majority-vote";
 
 /** Every algorithm the app knows about. Add a new one by appending it here. */
 export const ALGORITHMS: Algorithm[] = [
@@ -56,6 +61,11 @@ export const ALGORITHMS: Algorithm[] = [
   slidingWindowMax,
   kadane,
   nextGreater,
+  quickselect,
+  largestRectangle,
+  trappingRainWater,
+  minWindowSum,
+  majorityVote,
 ];
 
 export const findAlgorithm = (id: string) => ALGORITHMS.find((a) => a.id === id);
