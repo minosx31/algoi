@@ -19,7 +19,7 @@ export function StringView({ frame }: { frame: StringFrame }) {
 
   return (
     <div className="string-view" data-phase={frame.phase} ref={scroller}>
-      <div className="rows" style={{ "--n": row.length } as CSSProperties}>
+      <div className="rows" style={{ "--n": row.length, "--over": Math.max(0, offset + pattern.length - row.length) } as CSSProperties}>
         <div className="line index" aria-hidden="true">
           <span className="row-label" />
           {row.map((_, i) => (

@@ -139,11 +139,12 @@ function kmpSearch(text, pattern) {
     };
     let k = 0;
     for (let i = 1; i < m; i++) {
-      while (k > 0 && !same(i, k)) {
+      let grew = same(i, k);
+      while (k > 0 && !grew) {
         t.step("build-fallback", `P[${i}] = '${pattern[i]}' differs from P[${k}] = '${pattern[k]}', so fall back to k = π[${k - 1}] = ${pi[k - 1]}.`, { vars: { i, k }, active: k - 1 });
         k = pi[k - 1]!;
+        grew = same(i, k);
       }
-      const grew = same(i, k);
       t.step(
         "build-compare",
         grew ? `P[${i}] = P[${k}] = '${pattern[i]}', so the border grows to ${k + 1}.` : `P[${i}] = '${pattern[i]}' differs from P[0] = '${pattern[0]}', so no border ends here.`,

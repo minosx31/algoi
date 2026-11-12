@@ -174,6 +174,27 @@ describe("string search", () => {
     }
   });
 
+  test("kmp counts each character comparison once, building π and searching", () => {
+    const kmpCompares = (text: string, pattern: string) => {
+      let count = 0;
+      const eq = (a: string, b: string) => (count++, a === b);
+      const pi = [0];
+      for (let i = 1, k = 0; i < pattern.length; i++) {
+        let same = eq(pattern[i], pattern[k]);
+        while (k > 0 && !same) (k = pi[k - 1]), (same = eq(pattern[i], pattern[k]));
+        pi[i] = same ? ++k : k;
+      }
+      for (let i = 0, q = 0; i < text.length; i++) {
+        let same = eq(text[i], pattern[q]);
+        while (q > 0 && !same) (q = pi[q - 1]), (same = eq(text[i], pattern[q]));
+        if (same) q++;
+        if (q === pattern.length) q = pi[q - 1];
+      }
+      return count;
+    };
+    for (const { text, pattern } of searches) expect(compares(lastOf(byId("kmp").run(text, pattern)))).toBe(kmpCompares(text, pattern));
+  });
+
   test("the π, Z, and shift tables end equal to their definitions", () => {
     for (const { text, pattern } of searches) {
       const m = pattern.length;

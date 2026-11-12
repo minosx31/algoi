@@ -436,7 +436,7 @@ main {
   flex-direction: column;
   gap: var(--space-1);
   width: max-content;
-  min-width: 100%;
+  min-width: max(100%, calc(var(--label) + (var(--n) + var(--over)) * var(--cell)));
 }
 .string-view .line,
 .string-view .pattern,

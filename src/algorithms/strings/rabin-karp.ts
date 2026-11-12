@@ -27,6 +27,7 @@ export const rabinKarp: StringAlgorithm = {
   code: {
     pseudo: `
 procedure rabinKarp(T, P, base, mod)
+  if m > n then return an empty list
   h ← base^(m − 1) mod mod                                @@init
   p ← hash(P); t ← hash(T[0..m))                          @@init
   matches ← empty list
@@ -41,6 +42,8 @@ procedure rabinKarp(T, P, base, mod)
     python: `
 def rabin_karp(text, pattern, base=256, mod=7):
     n, m = len(text), len(pattern)
+    if m > n:
+        return []
     h = pow(base, m - 1, mod)                                           @@init
     p = t = 0                                                           @@init
     for i in range(m):                                                  @@init
@@ -59,6 +62,7 @@ def rabin_karp(text, pattern, base=256, mod=7):
 std::vector<int> rabinKarp(const std::string& text, const std::string& pattern,
                            int base = 256, int mod = 7) {
     int n = text.size(), m = pattern.size(), h = 1, p = 0, t = 0;
+    if (m > n) return {};
     for (int i = 1; i < m; i++) h = h * base % mod;                     @@init
     for (int i = 0; i < m; i++) {                                       @@init
         p = (base * p + (unsigned char)pattern[i]) % mod;               @@init
@@ -80,6 +84,7 @@ std::vector<int> rabinKarp(const std::string& text, const std::string& pattern,
     java: `
 static List<Integer> rabinKarp(String text, String pattern, int base, int mod) {
     int n = text.length(), m = pattern.length(), h = 1, p = 0, t = 0;
+    if (m > n) return new ArrayList<>();
     for (int i = 1; i < m; i++) h = h * base % mod;                     @@init
     for (int i = 0; i < m; i++) {                                       @@init
         p = (base * p + pattern.charAt(i)) % mod;                       @@init
@@ -100,6 +105,7 @@ static List<Integer> rabinKarp(String text, String pattern, int base, int mod) {
     javascript: `
 function rabinKarp(text, pattern, base = 256, mod = 7) {
   const n = text.length, m = pattern.length;
+  if (m > n) return [];
   let h = 1, p = 0, t = 0;
   for (let i = 1; i < m; i++) h = (h * base) % mod;                     @@init
   for (let i = 0; i < m; i++) {                                         @@init
