@@ -13,7 +13,7 @@ const stepsLabel = (steps: number) => `${steps} step${steps === 1 ? "" : "s"}`;
 function shortest(grid: number[][]) {
   const side = grid.length;
   const best = grid.map((row) => row.map(() => Infinity));
-  best[0][0] = 0;
+  best[0][0] = grid[0][0] ? Infinity : 0;
   for (let changed = true; changed; ) {
     changed = false;
     grid.forEach((row, r) =>
@@ -50,7 +50,7 @@ export const gridShortestPath: GridAlgorithm<Input> = {
     ],
     useCases: [
       "Robot and maze navigation on a grid of free and blocked cells.",
-      "Shortest moves for a game piece, such as a knight on a chessboard or a unit on a tile map.",
+      "Shortest moves for a game piece, such as a unit on a tile map that moves one square up, down, left, or right.",
       "Spreading effects that grow one step at a time, such as fire, flood, or infection puzzles.",
     ],
   },
@@ -59,6 +59,7 @@ export const gridShortestPath: GridAlgorithm<Input> = {
     pseudo: `
 procedure ShortestPath(grid)
   n ← side length of grid                            @@init
+  if (0, 0) is a wall then return −1                 @@done
   dist ← map with (0, 0) → 0
   queue ← [(0, 0)]
   while queue is not empty do
@@ -75,6 +76,8 @@ from collections import deque
 
 def shortest_path(grid):
     n = len(grid)                                    @@init
+    if grid[0][0] == 1:
+        return -1                                    @@done
     dist = {(0, 0): 0}
     queue = deque([(0, 0)])
     while queue:
@@ -91,6 +94,7 @@ def shortest_path(grid):
     cpp: `
 int shortestPath(const std::vector<std::vector<int>>& grid) {
     int n = grid.size();                             @@init
+    if (grid[0][0] == 1) return -1;                  @@done
     const int dr[] = {-1, 0, 1, 0}, dc[] = {0, 1, 0, -1};
     std::vector<std::vector<int>> dist(n, std::vector<int>(n, -1));
     std::queue<std::pair<int, int>> queue;
@@ -114,6 +118,7 @@ int shortestPath(const std::vector<std::vector<int>>& grid) {
     java: `
 static int shortestPath(int[][] grid) {
     int n = grid.length;                             @@init
+    if (grid[0][0] == 1) return -1;                  @@done
     int[] dr = {-1, 0, 1, 0}, dc = {0, 1, 0, -1};
     int[][] dist = new int[n][n];
     for (int[] row : dist) Arrays.fill(row, -1);
@@ -137,6 +142,7 @@ static int shortestPath(int[][] grid) {
     javascript: `
 function shortestPath(grid) {
   const n = grid.length;                             @@init
+  if (grid[0][0] === 1) return -1;                   @@done
   const dist = Array.from({ length: n }, () => new Array(n).fill(-1));
   const queue = [[0, 0]];
   dist[0][0] = 0;
@@ -172,14 +178,21 @@ function shortestPath(grid) {
     fillBoard(t, (r, c) => (grid[r][c] ? ["", "blocked"] : [""]));
     const dist = grid.map((row) => row.map(() => -1));
     const parent = new Map<number, Coord>();
-    const queue: Coord[] = [[0, 0]];
-    dist[0][0] = 0;
-    t.set(0, 0, 0, "frontier");
+    const queue: Coord[] = [];
     t.set(goal[0], goal[1], "E");
     const show = (line: string, note: string, extra: Parameters<GridTracer["step"]>[2] = {}) => {
       t.aux = { title: "Queue", items: queue.map(([r, c]) => `${r + 1},${c + 1}`) };
       t.step(line, note, extra);
     };
+    if (grid[0][0]) {
+      show("init", "Dark cells are walls. Find the fewest moves from the top-left cell to E in the bottom-right.");
+      t.answer = "No path";
+      show("done", "The start cell is a wall, so no path can leave it.");
+      return t.frames;
+    }
+    queue.push([0, 0]);
+    dist[0][0] = 0;
+    t.set(0, 0, 0, "frontier");
     show("init", "Dark cells are walls. Find the fewest moves from the top-left cell (distance 0) to E in the bottom-right. Cells are taken off the queue nearest first.");
 
     while (queue.length) {

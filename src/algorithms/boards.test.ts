@@ -158,6 +158,16 @@ describe("grid-shortest-path", () => {
     expect(final.answer).toBe("No path");
     expect(marked(final, "result")).toEqual([]);
   });
+
+  test("a walled start or goal ends on No path in run and solve", () => {
+    for (const grid of [
+      [[1, 0, 0], [0, 0, 0], [0, 0, 0]],
+      [[0, 0, 0], [0, 0, 0], [0, 0, 1]],
+    ]) {
+      expect(last(gridShortestPath.run({ grid })).answer).toBe("No path");
+      expect(gridShortestPath.solve!({ grid })).toBe("No path");
+    }
+  });
 });
 
 describe("unique-paths", () => {
