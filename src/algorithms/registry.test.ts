@@ -1,13 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { ALGORITHMS } from "./index";
 import { labelsOf } from "../core/code";
-import { GRAPH_LAYOUTS, buildGraph, randomArray, withRandomWeights } from "../core/inputs";
+import { buildGraph, layoutsOf, randomArray, withRandomWeights } from "../core/inputs";
 import { LANGUAGES, TOPIC_LABELS, edgeKey, type Graph, type GraphFrame } from "../core/types";
 import { VIEWS, viewOf } from "../core/views";
 
 function framesOf(algo: (typeof ALGORITHMS)[number]) {
   if (algo.kind === "sorting") return algo.run(randomArray(12));
-  if (algo.kind === "graph") return algo.run(withRandomWeights(buildGraph("mesh")), 0);
+  if (algo.kind === "graph") return algo.run(withRandomWeights(buildGraph("mesh", algo.directed)), 0);
   return viewOf(algo).run(algo, viewOf(algo).largestInput(algo));
 }
 
@@ -77,6 +77,63 @@ function twoColourable(g: Graph) {
   return true;
 }
 
+function outEdges(g: Graph) {
+  const out = g.nodes.map(() => [] as number[]);
+  for (const { u, v } of g.edges) out[u].push(v);
+  return out;
+}
+
+function hasDirectedCycle(g: Graph) {
+  const out = outEdges(g);
+  const left = new Set(g.nodes.map((n) => n.id));
+  let sink: number | undefined;
+  while ((sink = [...left].find((u) => out[u].every((v) => !left.has(v)))) !== undefined) left.delete(sink);
+  return left.size > 0;
+}
+
+function kosaraju(g: Graph) {
+  const out = outEdges(g);
+  const into = g.nodes.map(() => [] as number[]);
+  for (const { u, v } of g.edges) into[v].push(u);
+  const finish: number[] = [];
+  const seen = new Set<number>();
+  const dfs = (u: number, adj: number[][], sink: number[]) => {
+    seen.add(u);
+    for (const v of adj[u]) if (!seen.has(v)) dfs(v, adj, sink);
+    sink.push(u);
+  };
+  for (const n of g.nodes) if (!seen.has(n.id)) dfs(n.id, out, finish);
+  seen.clear();
+  const parts: number[][] = [];
+  for (const u of finish.reverse())
+    if (!seen.has(u)) {
+      const part: number[] = [];
+      dfs(u, into, part);
+      parts.push(part.sort((a, b) => a - b));
+    }
+  return parts.sort((a, b) => a[0] - b[0]);
+}
+
+function flowEndpoints(g: Graph, source: number) {
+  const out = outEdges(g);
+  const seen = new Set([source]);
+  const stack = [source];
+  while (stack.length) for (const v of out[stack.pop()!]) if (!seen.has(v)) seen.add(v), stack.push(v);
+  const sink = Math.max(...[...seen].filter((i) => i !== source), -1);
+  return { source, sink };
+}
+
+function minCut(g: Graph, source: number, sink: number) {
+  const others = g.nodes.map((n) => n.id).filter((i) => i !== source && i !== sink);
+  let best = Infinity;
+  for (let mask = 0; mask < 2 ** others.length; mask++) {
+    const side = new Set([source, ...others.filter((_, i) => mask & (1 << i))]);
+    const cap = g.edges.filter((e) => side.has(e.u) && !side.has(e.v)).reduce((sum, e) => sum + e.w, 0);
+    best = Math.min(best, cap);
+  }
+  return best;
+}
+
 const treeEdges = (g: Graph, last: GraphFrame) => g.edges.filter((e) => last.edges[edgeKey(e.u, e.v)] === "tree");
 
 function expectSpanningTree(g: Graph, _start: number, last: GraphFrame) {
@@ -121,6 +178,46 @@ const GRAPH_ORACLES: Record<string, Oracle> = {
     expect(treeEdges(g, last)).toEqual(bridges);
     for (const node of g.nodes) expect(last.labels[node.id]!.endsWith(" AP")).toBe(!connected(g, { node: node.id }));
   },
+  kahn: (g, _, last) => {
+    const order = last.aux.items.map((name) => g.nodes.findIndex((n) => n.name === name));
+    expect(order.length).toBe(g.nodes.length);
+    for (const { u, v } of g.edges) expect(order.indexOf(u)).toBeLessThan(order.indexOf(v));
+  },
+  "cycle-detect": (g, _, last) => {
+    const cyclic = hasDirectedCycle(g);
+    expect(last.vars?.cycle).toBe(cyclic ? "yes" : "no");
+    if (!cyclic) return;
+    const cycle = treeEdges(g, last);
+    expect(cycle.length).toBeGreaterThanOrEqual(2);
+    for (const { u, v } of cycle) {
+      expect(cycle.filter((e) => e.u === u).length).toBe(1);
+      expect(cycle.filter((e) => e.v === v).length).toBe(1);
+      expect(cycle.some((e) => e.u === v)).toBe(true);
+    }
+    expect(g.nodes.filter((n) => last.nodes[n.id] === "visited").length).toBe(cycle.length);
+  },
+  "tarjan-scc": (g, _, last) => {
+    const groups = new Map<string, number[]>();
+    for (const n of g.nodes) groups.set(last.labels[n.id]!, [...(groups.get(last.labels[n.id]!) ?? []), n.id]);
+    const got = [...groups.values()].sort((a, b) => a[0] - b[0]);
+    expect(got).toEqual(kosaraju(g));
+  },
+  "edmonds-karp": (g, start, last) => {
+    const { source, sink } = flowEndpoints(g, start);
+    const flow = last.vars?.flow;
+    expect(flow).toBe(sink < 0 ? 0 : minCut(g, source, sink));
+    const on = g.edges.map((e) => {
+      const [f, c] = last.edgeLabels![edgeKey(e.u, e.v)]!.split("/").map(Number);
+      expect(c).toBe(e.w);
+      expect(f).toBeGreaterThanOrEqual(0);
+      expect(f).toBeLessThanOrEqual(c);
+      return { ...e, f };
+    });
+    const net = (i: number) => on.filter((e) => e.u === i).reduce((s, e) => s + e.f, 0) - on.filter((e) => e.v === i).reduce((s, e) => s + e.f, 0);
+    expect(net(source)).toBe(flow as number);
+    for (const n of g.nodes) if (n.id !== source && n.id !== sink) expect(net(n.id)).toBe(0);
+    expect(treeEdges(g, last).length).toBe(on.filter((e) => e.f === e.w).length);
+  },
   bipartite: (g, _, last) => {
     const ok = twoColourable(g);
     expect(last.vars?.bipartite).toBe(ok ? "yes" : "no");
@@ -132,7 +229,7 @@ const GRAPH_ORACLES: Record<string, Oracle> = {
 const ids = ALGORITHMS.map((a) => a.id);
 
 test("every layout is connected and has at most 12 named nodes", () => {
-  for (const { id } of GRAPH_LAYOUTS)
+  for (const { id } of layoutsOf(true))
     for (let k = 0; k < 20; k++) {
       const g = buildGraph(id);
       expect(g.nodes.length).toBeLessThanOrEqual(12);
@@ -203,14 +300,68 @@ describe.each(ALGORITHMS.map((a) => [a.id, a] as const))("%s", (_, algo) => {
       });
     }
   } else if (algo.kind === "graph") {
-    test.each(GRAPH_LAYOUTS.map((l) => l.id))("visits everything with correct final labels on %s", (layout) => {
+    test.each(layoutsOf(!!algo.directed).map((l) => l.id))("visits everything with correct final labels on %s", (layout) => {
       for (const start of [0, 5, 9]) {
-        const g = withRandomWeights(buildGraph(layout));
+        const g = withRandomWeights(buildGraph(layout, algo.directed));
         const frames = algo.run(g, start);
         const last = frames[frames.length - 1];
-        if (!algo.stopsAtGoal) for (const node of g.nodes) expect(last.nodes[node.id]).toBe("visited");
+        if (!algo.stopsAtGoal && !algo.stopsAtCycle) for (const node of g.nodes) expect(last.nodes[node.id]).toBe("visited");
         GRAPH_ORACLES[algo.id]?.(g, start, last);
       }
     });
   }
+});
+
+describe("directed inputs", () => {
+  const byId = (id: string) => ALGORITHMS.find((a) => a.id === id)! as Extract<(typeof ALGORITHMS)[number], { kind: "graph" }>;
+
+  test("only the new algorithms are directed, and undirected layouts stay the five originals", () => {
+    expect(ALGORITHMS.filter((a) => a.kind === "graph" && a.directed).map((a) => a.id)).toEqual(["kahn", "cycle-detect", "tarjan-scc", "edmonds-karp"]);
+    expect(layoutsOf(false).map((l) => l.id)).toEqual(["mesh", "grid", "tree", "ring", "random"]);
+  });
+
+  test.each(layoutsOf(true).map((l) => l.id))("%s: acyclic points forward, cyclic adds back edges without antiparallel pairs", (layout) => {
+    for (let k = 0; k < 20; k++) {
+      const forward = buildGraph(layout, "acyclic");
+      expect(forward.edges.every((e) => e.u < e.v)).toBe(true);
+      expect(hasDirectedCycle(forward)).toBe(false);
+      const cyclic = buildGraph(layout, "cyclic");
+      expect(hasDirectedCycle(cyclic)).toBe(true);
+      expect(new Set(cyclic.edges.map((e) => edgeKey(e.u, e.v))).size).toBe(cyclic.edges.length);
+    }
+  });
+
+  test("cycle detection reports no cycle on a DAG and visits every node", () => {
+    const g = buildGraph("dag", "acyclic");
+    const last = byId("cycle-detect").run(g, 0).at(-1)!;
+    expect(last.vars?.cycle).toBe("no");
+    for (const n of g.nodes) expect(last.nodes[n.id]).toBe("visited");
+  });
+
+  test("Kahn stops short on a cyclic graph and says so", () => {
+    const g = buildGraph("mesh", "cyclic");
+    const last = byId("kahn").run(g, 0).at(-1)!;
+    expect(last.aux.items.length).toBeLessThan(g.nodes.length);
+    expect(last.note).toContain("cycle");
+  });
+
+  test("parallel edges in one direction add their capacities", () => {
+    const g: Graph = {
+      nodes: ["A", "B"].map((name, id) => ({ id, name, x: id * 100, y: 0 })),
+      edges: [
+        { u: 0, v: 1, w: 2 },
+        { u: 0, v: 1, w: 3 },
+      ],
+    };
+    expect(byId("edmonds-karp").run(g, 0).at(-1)!.vars?.flow).toBe(5);
+  });
+
+  test("a start that reaches nothing gives zero flow", () => {
+    const g = buildGraph("mesh", "acyclic");
+    expect(byId("edmonds-karp").run(g, 9).at(-1)!.vars?.flow).toBe(0);
+  });
+
+  test("an undirected run draws no edge labels", () => {
+    for (const a of ALGORITHMS) if (a.kind === "graph" && !a.directed) expect(a.run(buildGraph("mesh"), 0).some((f) => f.edgeLabels)).toBe(false);
+  });
 });

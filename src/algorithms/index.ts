@@ -17,6 +17,10 @@ import { prim } from "./graph/prim";
 import { kruskal } from "./graph/kruskal";
 import { bridges } from "./graph/bridges";
 import { bipartite } from "./graph/bipartite";
+import { kahn } from "./graph/kahn";
+import { cycleDetect } from "./graph/cycle-detect";
+import { tarjanScc } from "./graph/tarjan-scc";
+import { edmondsKarp } from "./graph/edmonds-karp";
 
 /** Every algorithm the app knows about. Add a new one by appending it here. */
 export const ALGORITHMS: Algorithm[] = [
@@ -38,6 +42,10 @@ export const ALGORITHMS: Algorithm[] = [
   kruskal,
   bridges,
   bipartite,
+  kahn,
+  cycleDetect,
+  tarjanScc,
+  edmondsKarp,
 ];
 
 export const findAlgorithm = (id: string) => ALGORITHMS.find((a) => a.id === id);

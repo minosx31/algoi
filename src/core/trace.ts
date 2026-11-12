@@ -45,15 +45,17 @@ export class GraphTracer {
   readonly nodes: GraphFrame["nodes"] = {};
   readonly edges: GraphFrame["edges"] = {};
   readonly labels: GraphFrame["labels"] = {};
+  edgeLabels?: NonNullable<GraphFrame["edgeLabels"]>;
   readonly adj: { to: number; w: number }[][];
   readonly graph: Graph;
 
-  constructor(graph: Graph) {
+  /** A directed tracer lists each edge only under its tail `u`. */
+  constructor(graph: Graph, directed = false) {
     this.graph = graph;
     this.adj = graph.nodes.map(() => []);
     for (const { u, v, w } of graph.edges) {
       this.adj[u].push({ to: v, w });
-      this.adj[v].push({ to: u, w });
+      if (!directed) this.adj[v].push({ to: u, w });
     }
     for (const list of this.adj) list.sort((a, b) => a.to - b.to);
   }
@@ -66,6 +68,10 @@ export class GraphTracer {
     this.edges[edgeKey(u, v)] = mark;
   }
 
+  labelEdge(u: number, v: number, text: string) {
+    (this.edgeLabels ??= {})[edgeKey(u, v)] = text;
+  }
+
   step(line: string, note: string, aux: GraphFrame["aux"], extra: { current?: number; considered?: [number, number]; vars?: Vars } = {}) {
     const nodes = { ...this.nodes };
     const edges = { ...this.edges };
@@ -74,6 +80,8 @@ export class GraphTracer {
       const k = edgeKey(...extra.considered);
       if (edges[k] !== "tree") edges[k] = "considered";
     }
-    this.frames.push({ line, note, vars: extra.vars, nodes, edges, labels: { ...this.labels }, aux: { title: aux.title, items: aux.items.slice() } });
+    const frame: GraphFrame = { line, note, vars: extra.vars, nodes, edges, labels: { ...this.labels }, aux: { title: aux.title, items: aux.items.slice() } };
+    if (this.edgeLabels) frame.edgeLabels = { ...this.edgeLabels };
+    this.frames.push(frame);
   }
 }
