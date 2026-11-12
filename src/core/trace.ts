@@ -1,4 +1,4 @@
-import type { ArrayFrame, ArrayItem, BarMark, CellMark, Coord, Graph, GraphFrame, GridCell, GridFrame, ScanAnswer, ScanFrame, Vars } from "./types";
+import type { ArrayFrame, ArrayItem, BarMark, CellMark, Coord, Graph, GraphFrame, GridCell, GridFrame, ScanAnswer, ScanFrame, TreeFrame, TreeMark, TreeNode, Vars } from "./types";
 import { edgeKey } from "./types";
 
 /** Records full-snapshot frames while a sorting algorithm mutates `items`. */
@@ -155,5 +155,54 @@ export class GridTracer {
     if (extra.current) paint(extra.current, "current");
     const aux = this.aux && { title: this.aux.title, items: this.aux.items.slice() };
     this.frames.push({ line, note, vars: extra.vars, cells, ...this.layout, aux, answer: this.answer });
+  }
+}
+
+/** A node as an algorithm holds it; `TreeTracer` flattens these into `TreeNode`s with child ids. */
+export type TreeShape = { id: number; value: number | string; children: readonly (TreeShape | null)[] };
+
+type BinaryNode = { id: number; value: number | string; left: BinaryNode | null; right: BinaryNode | null };
+
+export const binaryShape = (n: BinaryNode | null): TreeShape | null =>
+  n && { id: n.id, value: n.value, children: [binaryShape(n.left), binaryShape(n.right)] };
+
+type TreeMarks = Partial<Record<number, TreeMark>>;
+type TreeSnapshot = () => { roots: readonly (TreeShape | null)[]; array?: number[] };
+
+/** Records full-snapshot frames of a tree or forest the algorithm owns, read through `snapshot` at every step. */
+export class TreeTracer {
+  readonly frames: TreeFrame[] = [];
+  readonly marks: TreeMarks = {};
+  aux: TreeFrame["aux"];
+  answer?: string;
+  private readonly snapshot: TreeSnapshot;
+
+  constructor(auxTitle: string, snapshot: TreeSnapshot) {
+    this.aux = { title: auxTitle, items: [] };
+    this.snapshot = snapshot;
+  }
+
+  step(line: string, note: string, extra: { marks?: TreeMarks; vars?: Vars } = {}) {
+    const { roots, array } = this.snapshot();
+    const marks = { ...this.marks, ...extra.marks };
+    const nodes: TreeNode[] = [];
+    const flatten = (shape: TreeShape | null): number | null => {
+      if (!shape) return null;
+      const node: TreeNode = { id: shape.id, value: shape.value, children: [], mark: marks[shape.id] };
+      nodes.push(node);
+      node.children = shape.children.map(flatten);
+      return shape.id;
+    };
+    const rootIds = roots.flatMap((r) => (r ? [flatten(r)!] : []));
+    this.frames.push({
+      line,
+      note,
+      vars: extra.vars,
+      nodes,
+      roots: rootIds,
+      array: array?.slice(),
+      aux: { title: this.aux.title, items: this.aux.items.slice() },
+      answer: this.answer,
+    });
   }
 }

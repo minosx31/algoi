@@ -481,7 +481,7 @@ main {
   font-size: 10px;
   margin-left: 1px;
 }
-.answer {
+.scan-view .answer {
   margin-left: auto;
   min-width: 0;
   overflow: hidden;
@@ -489,7 +489,7 @@ main {
   white-space: nowrap;
   font-family: var(--mono);
 }
-.answer b {
+.scan-view .answer b {
   color: var(--sorted);
 }
 .scan-plot {
@@ -729,6 +729,70 @@ main {
 .legend:empty {
   display: none;
 }
+.tree-view {
+  width: 100%;
+  height: 100%;
+}
+[data-mark="path"] {
+  --bar-color: var(--active);
+}
+[data-mark="target"] {
+  --bar-color: var(--pivot);
+}
+[data-mark="done"] {
+  --bar-color: var(--sorted);
+}
+.tree-edge {
+  fill: none;
+  stroke: var(--idle);
+  stroke-width: 2.5;
+  transition: d 300ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.tree-node,
+.tree-cell {
+  transition: transform 300ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.tree-node circle,
+.tree-cell rect {
+  fill: var(--bar-color, var(--surface-raised));
+  stroke: var(--bar-color, var(--border-strong));
+  stroke-width: 2;
+  transition:
+    fill 150ms,
+    stroke 150ms;
+}
+.tree-node circle {
+  animation: tree-enter 240ms ease-out;
+}
+@keyframes tree-enter {
+  from {
+    opacity: 0;
+    scale: 0.4;
+  }
+}
+.tree-node text,
+.tree-cell text {
+  text-anchor: middle;
+  font-size: 15px;
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  fill: var(--text-primary);
+}
+.tree-node:not([data-mark="idle"]) text,
+.tree-cell:not([data-mark="idle"]) text {
+  fill: var(--node-text-on-mark);
+}
+.tree-index {
+  text-anchor: middle;
+  font-size: 11px;
+  fill: var(--text-secondary);
+}
+.aux.answer {
+  background: var(--action-tint);
+  border-color: transparent;
+  color: var(--action-tint-text);
+}
+
 .legend {
   display: flex;
   flex-wrap: wrap;
@@ -1092,6 +1156,20 @@ main {
   .grid-scroll {
     max-height: 320px;
   }
+  .tree-node circle {
+    r: 26px;
+  }
+  .tree-node text {
+    font-size: 22px;
+    transform: translateY(2px);
+  }
+  .tree-cell text {
+    font-size: 18px;
+    transform: translateY(1px);
+  }
+  .tree-index {
+    font-size: 15px;
+  }
   .code {
     max-height: 360px;
   }
@@ -1104,7 +1182,13 @@ main {
   .node circle,
   .band,
   .chip,
-  .grid-view td {
+  .grid-view td,
+  .tree-edge,
+  .tree-node,
+  .tree-cell,
+  .tree-node circle,
+  .tree-cell rect {
     transition: none;
+    animation: none;
   }
 }

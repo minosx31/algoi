@@ -43,6 +43,9 @@ import { wordSearch } from "./backtracking/word-search";
 import { islands } from "./grids/islands";
 import { gridShortestPath } from "./grids/grid-shortest-path";
 import { uniquePaths } from "./grids/unique-paths";
+import { bst } from "./trees/bst";
+import { treeTraversals } from "./trees/traversals";
+import { binaryHeap } from "./trees/binary-heap";
 
 /** Every algorithm the app knows about. Add a new one by appending it here. */
 export const ALGORITHMS: Algorithm[] = [
@@ -90,6 +93,9 @@ export const ALGORITHMS: Algorithm[] = [
   islands,
   gridShortestPath,
   uniquePaths,
+  bst,
+  treeTraversals,
+  binaryHeap,
 ];
 
 export const findAlgorithm = (id: string) => ALGORITHMS.find((a) => a.id === id);

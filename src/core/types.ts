@@ -45,6 +45,19 @@ export type GraphFrame = FrameBase & {
 
 /** How a directed input derives from a layout: forward edges only, or forward edges plus back edges that close cycles. */
 export type Directed = "acyclic" | "cyclic";
+export type TreeMark = "compare" | "path" | "swap" | "target" | "done";
+
+/** A binary node lists `[left, right]` with `null` for a missing side; an n-ary node lists only real children. */
+export type TreeNode = { id: number; value: number | string; children: (number | null)[]; mark?: TreeMark };
+
+export type TreeFrame = FrameBase & {
+  nodes: TreeNode[];
+  roots: number[];
+  /** Node ids in backing-array order, for structures stored in an array such as a binary heap. */
+  array?: number[];
+  aux: { title: string; items: string[] };
+  answer?: string;
+};
 
 export type Graph = {
   nodes: { id: number; name: string; x: number; y: number }[];
@@ -99,7 +112,7 @@ export type About = {
 
 export type Complexity = { best: string; average: string; worst: string; space: string };
 
-export const TOPIC_LABELS = { sorting: "Sorting", graph: "Graph", arrays: "Arrays", dp: "Dynamic programming", backtracking: "Backtracking", grids: "Grids" } as const;
+export const TOPIC_LABELS = { sorting: "Sorting", graph: "Graph", arrays: "Arrays", dp: "Dynamic programming", backtracking: "Backtracking", grids: "Grids", tree: "Trees" } as const;
 export type Topic = keyof typeof TOPIC_LABELS;
 
 type AlgorithmBase = {
@@ -158,6 +171,11 @@ export type GridAlgorithm<I = unknown> = AlgorithmBase & {
   solve(input: I): string;
 };
 
-export type Algorithm = SortingAlgorithm | GraphAlgorithm | ScanAlgorithm | GridAlgorithm;
+export type TreeAlgorithm = AlgorithmBase & {
+  kind: "tree";
+  run: (keys: number[]) => TreeFrame[];
+};
+
+export type Algorithm = SortingAlgorithm | GraphAlgorithm | ScanAlgorithm | GridAlgorithm | TreeAlgorithm;
 
 export const edgeKey = (u: number, v: number) => (u < v ? `${u}-${v}` : `${v}-${u}`);
