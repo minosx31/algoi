@@ -57,7 +57,7 @@ try {
     await page.getByRole("button", { name: "Last step" }).click();
     const [cur, total] = (await counter.textContent())!.split("/").map((s) => s.trim());
     assert(cur === total, `${algo.id}: seek to last frame (${total} frames)`);
-    const end = viewOf(algo).endState;
+    const end = viewOf(algo).endState(algo);
     const items = await page.locator(end.all).count();
     assert(items > 0 && items === (await page.locator(end.done).count()), `${algo.id}: ${end.label}`);
     await page.screenshot({ path: `${shots}/${algo.id}-end.png` });

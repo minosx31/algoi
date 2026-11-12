@@ -2,8 +2,9 @@ import type { ComponentType } from "react";
 import { ArrayView } from "../components/ArrayView";
 import { GraphView } from "../components/GraphView";
 import { GridView } from "../components/GridView";
-import { GRAPH_LAYOUTS, buildGraph, randomArray, withRandomWeights, type LayoutId } from "./inputs";
-import type { Algorithm, Graph, GridAlgorithm } from "./types";
+import { ScanView } from "../components/ScanView";
+import { buildGraph, layoutsOf, randomArray, withRandomWeights, type LayoutId } from "./inputs";
+import type { Algorithm, Graph, GridAlgorithm, ScanInput } from "./types";
 
 type Kind = Algorithm["kind"];
 type AlgoOf<K extends Kind> = Extract<Algorithm, { kind: K }>;
@@ -17,7 +18,7 @@ type ViewRow<K extends Kind, I> = {
   Controls: ComponentType<{ algo: AlgoOf<K>; input: I; setInput: (input: I) => void; onLayout: (layout: LayoutId) => void }>;
   Status?: ComponentType<{ frame: FrameOf<K> }>;
   legend: readonly (readonly [mark: string, label: string])[];
-  endState: { all: string; done: string; label: string };
+  endState: (algo: AlgoOf<K>) => { all: string; done: string; label: string };
 };
 
 const SORT_SIZE = { initial: 16, min: 4, max: 48 };
@@ -51,24 +52,29 @@ const sorting: ViewRow<"sorting", SortingInput> = {
     ["active", "Active"],
     ["sorted", "Final position"],
   ],
-  endState: { all: ".bar", done: '.bar[data-mark="sorted"]', label: "every bar ends sorted" },
+  endState: () => ({ all: ".bar", done: '.bar[data-mark="sorted"]', label: "every bar ends sorted" }),
 };
 
 type GraphInput = { layout: LayoutId; graph: Graph; start: number };
 
-const graphInput = (layout: LayoutId): GraphInput => ({ layout, graph: buildGraph(layout), start: 0 });
+const graphInput = (algo: AlgoOf<"graph">, layout: LayoutId): GraphInput => {
+  const offered = layoutsOf(!!algo.directed).some((l) => l.id === layout) ? layout : "mesh";
+  return { layout: offered, graph: buildGraph(offered, algo.directed), start: 0 };
+};
 
 const graph: ViewRow<"graph", GraphInput> = {
-  makeInput: (_, layout) => graphInput(layout),
-  largestInput: () => graphInput("grid"),
+  makeInput: graphInput,
+  largestInput: (algo) => graphInput(algo, "grid"),
   run: (algo, { graph, start }) => algo.run(graph, start),
   Canvas: ({ algo, input, frame, setInput }) => (
     <GraphView
       graph={input.graph}
       frame={frame}
-      start={input.start}
+      start={algo.ignoresStart ? undefined : input.start}
       weighted={algo.weighted}
-      onPickStart={(start) => setInput({ ...input, start })}
+      goal={frame.vars?.goal}
+      directed={!!algo.directed}
+      onPickStart={algo.ignoresStart ? undefined : (start) => setInput({ ...input, start })}
     />
   ),
   Controls: ({ algo, input, setInput, onLayout }) => (
@@ -80,19 +86,19 @@ const graph: ViewRow<"graph", GraphInput> = {
           onChange={(e) => {
             const layout = e.target.value as LayoutId;
             onLayout(layout);
-            setInput(graphInput(layout));
+            setInput(graphInput(algo, layout));
           }}
         >
-          {GRAPH_LAYOUTS.map((l) => (
+          {layoutsOf(!!algo.directed).map((l) => (
             <option key={l.id} value={l.id}>
               {l.label}
             </option>
           ))}
         </select>
       </label>
-      {input.layout === "random" && <button onClick={() => setInput(graphInput("random"))}>New graph</button>}
+      {input.layout === "random" && <button onClick={() => setInput(graphInput(algo, "random"))}>New graph</button>}
       {algo.weighted && <button onClick={() => setInput({ ...input, graph: withRandomWeights(input.graph) })}>Random weights</button>}
-      <span className="hint">Click a node to start there.</span>
+      {!algo.ignoresStart && <span className="hint">Click a node to start there.</span>}
     </>
   ),
   Status: ({ frame }) => (
@@ -106,7 +112,42 @@ const graph: ViewRow<"graph", GraphInput> = {
     ["visited", "Done"],
     ["tree", "Tree edge"],
   ],
-  endState: { all: ".node", done: '.node[data-mark="visited"]', label: "every node ends visited" },
+  endState: (algo) =>
+    algo.stopsAtCycle
+      ? { all: '.edge[data-mark="tree"]', done: '.node[data-mark="visited"]', label: "the cycle is closed: as many drawn nodes as drawn edges" }
+      : algo.stopsAtGoal
+        ? {
+            all: ".node[data-goal]",
+            done: 'svg:has(.edge[data-mark="tree"]) .node[data-goal][data-mark="visited"]',
+            label: "the goal ends visited with a tree edge drawn",
+          }
+        : { all: ".node", done: '.node[data-mark="visited"]', label: "every node ends visited" },
+};
+
+const SCAN_SIZE = { initial: 16, min: 4, max: 48 };
+
+const scan: ViewRow<"scan", ScanInput> = {
+  makeInput: (algo) => algo.makeInput(SCAN_SIZE.initial),
+  largestInput: (algo) => algo.makeInput(SCAN_SIZE.max),
+  run: (algo, input) => algo.run(input),
+  Canvas: ({ algo, frame }) => <ScanView algo={algo} frame={frame} />,
+  Controls: ({ algo, input, setInput }) => (
+    <>
+      <label>
+        Size <strong>{input.values.length}</strong>
+        <input
+          type="range"
+          min={SCAN_SIZE.min}
+          max={SCAN_SIZE.max}
+          value={input.values.length}
+          onChange={(e) => setInput(algo.makeInput(+e.target.value))}
+        />
+      </label>
+      <button onClick={() => setInput(algo.makeInput(input.values.length))}>New input</button>
+    </>
+  ),
+  legend: [],
+  endState: () => ({ all: ".scan-view", done: ".scan-view .answer", label: "the answer shows at the last step" }),
 };
 
 type GridInput = { size: number; data: unknown };
@@ -148,10 +189,10 @@ const grid: ViewRow<"grid", GridInput> = {
     </>
   ),
   legend: [],
-  endState: { all: ".grid-view td", done: '.grid-view td:not([data-mark="pending"])', label: "every cell ends filled" },
+  endState: () => ({ all: ".grid-view td", done: '.grid-view td:not([data-mark="pending"])', label: "every cell ends filled" }),
 };
 
-export const VIEWS = { sorting, graph, grid } satisfies { [K in Kind]: ViewRow<K, any> };
+export const VIEWS = { sorting, graph, scan, grid } satisfies { [K in Kind]: ViewRow<K, any> };
 
 export type Input = ReturnType<(typeof VIEWS)[Kind]["makeInput"]>;
 export type Frame = FrameOf<Kind>;

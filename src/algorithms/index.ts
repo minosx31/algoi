@@ -4,9 +4,33 @@ import { insertionSort } from "./sorting/insertion";
 import { selectionSort } from "./sorting/selection";
 import { mergeSort } from "./sorting/merge";
 import { quickSort } from "./sorting/quick";
+import { heapSort } from "./sorting/heap";
+import { countingSort } from "./sorting/counting";
+import { radixSort } from "./sorting/radix";
+import { quickSort3 } from "./sorting/quick3";
 import { bfs } from "./graph/bfs";
 import { dfs } from "./graph/dfs";
 import { dijkstra } from "./graph/dijkstra";
+import { aStar } from "./graph/astar";
+import { bellmanFord } from "./graph/bellman-ford";
+import { prim } from "./graph/prim";
+import { kruskal } from "./graph/kruskal";
+import { bridges } from "./graph/bridges";
+import { bipartite } from "./graph/bipartite";
+import { kahn } from "./graph/kahn";
+import { cycleDetect } from "./graph/cycle-detect";
+import { tarjanScc } from "./graph/tarjan-scc";
+import { edmondsKarp } from "./graph/edmonds-karp";
+import { binarySearch } from "./arrays/binary-search";
+import { twoSumSorted } from "./arrays/two-sum-sorted";
+import { slidingWindowMax } from "./arrays/sliding-window-max";
+import { kadane } from "./arrays/kadane";
+import { nextGreater } from "./arrays/next-greater";
+import { quickselect } from "./arrays/quickselect";
+import { largestRectangle } from "./arrays/largest-rectangle";
+import { trappingRainWater } from "./arrays/trapping-rain-water";
+import { minWindowSum } from "./arrays/min-window-sum";
+import { majorityVote } from "./arrays/majority-vote";
 import { floydWarshall } from "./graph/floyd-warshall";
 import { lcs } from "./dp/lcs";
 import { editDistance } from "./dp/edit-distance";
@@ -27,9 +51,33 @@ export const ALGORITHMS: Algorithm[] = [
   selectionSort,
   mergeSort,
   quickSort,
+  heapSort,
+  countingSort,
+  radixSort,
+  quickSort3,
   bfs,
   dfs,
   dijkstra,
+  aStar,
+  bellmanFord,
+  prim,
+  kruskal,
+  bridges,
+  bipartite,
+  kahn,
+  cycleDetect,
+  tarjanScc,
+  edmondsKarp,
+  binarySearch,
+  twoSumSorted,
+  slidingWindowMax,
+  kadane,
+  nextGreater,
+  quickselect,
+  largestRectangle,
+  trappingRainWater,
+  minWindowSum,
+  majorityVote,
   floydWarshall,
   lcs,
   editDistance,
